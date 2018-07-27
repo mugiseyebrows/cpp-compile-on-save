@@ -1,4 +1,8 @@
-# Build
+## Demo
+
+![demo](http://mugiseyebrows.github.io/img/cpp-compile-on-save.gif)
+
+## Build
 
 `npm install`
 
@@ -8,13 +12,13 @@ edit server\targets.json
 
 edit server\bookmarks.json
 
-# Run
+## Run
 
 `node server\index.js`
 
 open [http://localhost:4000](http://localhost:4000)
 
-# Hack (you need two shells)
+## Hack (you need two shells)
 
 `rd /s /q build`
 
