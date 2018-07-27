@@ -208,8 +208,8 @@ class App extends Component {
 
     var targetsBody = this.state.targets.map( (target,i) => {
     
-        var debugTime = this.mtimeFromNow(target.debugMtime)
-        var releaseTime = this.mtimeFromNow(target.releaseMtime)
+        var debugTime = this.mtimeFromNow(target.Mtime['debug'])
+        var releaseTime = this.mtimeFromNow(target.Mtime['release'])
 
         var compileTime = target.compileTime['debug'] != null ? `${target.compileTime['debug'] / 1000}` : ''
         var compileCode = target.compileCode['debug']

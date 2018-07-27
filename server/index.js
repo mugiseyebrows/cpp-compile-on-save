@@ -15,18 +15,10 @@ const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const CompileStat = require('./CompileStat')
 
-/*
-setTimeout(()=>{
-    serialPort.write('g')
-},1000)
-*/
-
 var port = 4000;
 server.listen(port, () => {
     console.log('Server listening at port %d', port);
 });
-
-//));
 
 var build = path.join(__dirname,'..', 'build')
 var public = path.join(__dirname,'..', 'public')
@@ -37,9 +29,6 @@ if (fs.existsSync(build)) {
     debug(`serving ${public}`)
     app.use(express.static(public))
 }
-
-/*var compileTime = {}
-var compileCode = {}*/
 
 function pathContains(p,c) {
     p_ = p.split('\\')
@@ -125,21 +114,18 @@ io.on('connection', (socket) => {
     socket.on('get-targets',()=>{
         //debug('get-targets')
         var targets = fse.readJsonSync(path.join(__dirname,'targets.json')).map(target => {
-            var modes = ['debug','release'];
-            modes.forEach( m => {
-                if (fs.existsSync(target[m])) {
-                    target[m + 'Mtime'] = fs.statSync(target[m]).mtime
-                } else {
-                    target[m + 'Mtime'] = null
-                }
-            })
-
             var modes = ['debug','release']
 
             target['compileTime'] = {}
             target['compileCode'] = {}
+            target['Mtime'] = {}
 
-            modes.forEach(mode => {
+            modes.forEach( mode => {
+                if (fs.existsSync(target[mode])) {
+                    target['Mtime'][mode] = fs.statSync(target[mode]).mtime
+                } else {
+                    target['Mtime'][mode] = null
+                }
                 var stat = compileStat.get(target.cwd, mode)
                 if (stat !== null) {
                     target['compileTime'][mode] = stat.t
