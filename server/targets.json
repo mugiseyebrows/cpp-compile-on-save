@@ -1,0 +1,7 @@
+[{
+    "name": "testapp",
+    "debug": "D:\\dev\\testapp\\debug\\testapp.exe",
+    "release": "D:\\dev\\testapp\\release\\testapp.exe",
+    "cwd": "D:\\dev\\testapp",
+    "kill": ["testapp.exe"]
+}]

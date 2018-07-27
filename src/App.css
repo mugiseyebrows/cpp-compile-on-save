@@ -1,0 +1,110 @@
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  font-size: small;
+  color: #404040;
+}
+
+.proc-title {
+  font-style: italic;
+  margin: 5px 0;
+  color: blue;
+}
+
+.proc-data {
+  white-space: pre-wrap;
+}
+
+.compile-success {
+  color: green;
+}
+
+.compile-error {
+  color:red;
+}
+
+table.targets  {
+  padding: 10px 0;
+  width: 100%;
+}
+
+.targets tr td {
+  padding: 0 10px;
+}
+
+.targets tr td {
+  text-align: center;
+}
+
+.targets tr td:nth-child(1), .targets tr td:nth-child(2) {
+  text-align: left;
+}
+
+.errors ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+ul.tasks {
+  list-style: none;
+  padding: 10px 0;
+  margin: 0;
+}
+
+.flexpane-buttons .checkbox {
+  
+  font-size: small;
+}
+
+.flexpane-buttons .checkbox input {
+  margin: 0 0 0 15px;
+  position: relative;
+  top: 2px;
+  left: -3px;
+}
+
+.flexpane-buttons button.compile {
+  /*border: 1px solid gray;*/
+  /*padding: 2px;
+  background: white;*/
+}
+
+.compile-label {
+  padding: 0 10px;
+}
+
+.hide-buttons .compile-button {
+  /*display: none;*/
+}
+
+.hide-buttons:hover .compile-button {
+  /*display: inline;*/
+}
+
+.compile-button {
+  /*margin: -10px 0;*/
+  vertical-align: middle;
+}
+
+ul.bookmarks {
+  margin: 0;
+  padding: 0 0 10px 0;
+}
+
+ul.bookmarks li {
+  display: inline;
+}
+
+.flexpane-pane.flexpane-pane-normal.stdout, .flexpane-pane.flexpane-pane-normal.stderr {
+  max-height: 25vh;
+  padding-bottom: 10px;
+}
+
+.stderr ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
