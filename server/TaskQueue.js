@@ -5,13 +5,14 @@ const fkill = require('fkill')
 const {spawn} = require('child_process')
 
 class TaskQueue {
-    constructor(compileStat,lights) {
+    constructor(compileStat,trafficLights,config) {
         this.proc = null
         this.tasks = []
         this.socket = null
         this.handle = null
         this.compileStat = compileStat
-        this.lights = lights
+        this.trafficLights = trafficLights
+        this.config = config
     }
 
     setSocket(socket) {
@@ -81,11 +82,13 @@ class TaskQueue {
                 var cwd = task.cwd
 
                 var t = +new Date()
-                this.emit('proc-start',{cwd:task.cwd, mode:task.mode})
-                debug('mingw32-make',[task.mode,'-j5'],{cwd:cwd})
-                this.proc = spawn('mingw32-make',[task.mode,'-j5'],{cwd:cwd})
+                this.emit('proc-start', {cwd:task.cwd, mode:task.mode})
+                
+                var makeCmd = this.config.make[0]
+                var makeArgs = [task.mode, ...this.config.make[1]]
+                this.proc = spawn(makeCmd,makeArgs,{cwd:cwd})
 
-                this.lights.blue()
+                this.trafficLights.blue()
 
                 this.proc.stdout.on('data',(data)=>{
                     this.emit('proc-stdout',{data:data.toString(),cwd:cwd})
@@ -116,9 +119,9 @@ class TaskQueue {
                     debug(`process terminated with code ${code} in ${t}ms`)
 
                     if (code === 0) {
-                        this.lights.green()
+                        this.trafficLights.green()
                     } else {
-                        this.lights.red()
+                        this.trafficLights.red()
                     }
 
                     this.compileStat.set(task.cwd, task.mode, code, t)

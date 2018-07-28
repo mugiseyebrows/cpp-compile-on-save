@@ -5,8 +5,12 @@ var SerialPort = require('serialport')
 
 class TrafficLights {
 
-    constructor(port) {
-        this.port = new SerialPort('COM6',{baudRate: 9600});
+    constructor(serialPort) {
+        if (serialPort != null)  {
+            this.port = new SerialPort(serialPort);
+        } else {
+            this.port = {write:()=>{}}
+        }
     }
 
     red() {

@@ -14,6 +14,7 @@ const {spawn} = require('child_process')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const CompileStat = require('./CompileStat')
+const {findRoots, findTarget} = require('./Utils')
 
 var port = 4000;
 server.listen(port, () => {
@@ -30,76 +31,42 @@ if (fs.existsSync(build)) {
     app.use(express.static(public))
 }
 
-function pathContains(p,c) {
-    p_ = p.split('\\')
-    c_ = c.split('\\')
-    if (c_.length < p_.length) {
-        return false;
-    }
-    for(var i=0;i<p_.length;i++) {
-        if (p_[i] !== c_[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-function findRoots(targets) {
-    var targets_  = targets.slice()
-    targets_.sort( (a,b) => a.cwd.split('\\').length < b.cwd.split('\\').length ? -1 : 1 )
-    var roots = [];
-    targets_.forEach(target => {
-        if (roots.map( root => pathContains(root, target.cwd) ).filter( e => e != false ).length == 0) {
-            roots.push(target.cwd)
-        }
-    })
-    return roots
-}
-
-function findTarget(targets,p) {
-    var targets_  = targets.slice()
-    targets_.sort( (a,b) => a.cwd.split('\\').length < b.cwd.split('\\').length ? 1 : -1 )
-    for(var i=0;i<targets_.length;i++) {
-        if (pathContains(targets_[i].cwd,p)) {
-            return targets_[i];
-        }
-    }
-}
-
 var targets = fse.readJsonSync(path.join(__dirname,'targets.json'))
 var bookmarks = fse.readJsonSync(path.join(__dirname,'bookmarks.json'))
+var config = fse.readJsonSync(path.join(__dirname,'config.json'))
 
-var lights = new TrafficLights('COM6')
+var trafficLights = new TrafficLights(config.serialPort)
 var compileStat = new CompileStat()
 
-var taskQueue = new TaskQueue(compileStat,lights)
+var taskQueue = new TaskQueue(compileStat, trafficLights, config)
 
 var roots = findRoots(targets)
 
 var active = true;
 
-var exts = new Set(['.ui','.cpp','.h','.pro'])
-var exts2 = new Set(['.dll','.exe'])
+var sourceExts = new Set(['.ui','.cpp','.h','.pro'])
+var binaryExts = new Set(['.dll','.exe'])
 
 roots.forEach(root => {
     fs.watch(root,{recursive:true},(event,filename) => {
         
         if (filename === null) {
-            debug('filename is null, weird')
+            debug('filename is null, weird',event)
             return
         }
         if (event == "change" || event == "rename") {
             var basename = path.basename(filename)
-            var filename_ = path.join(root,filename)
+            var ext = path.extname(basename)
+            var absFileName = path.join(root,filename)
             if (basename.match(/moc_|ui_|qrc_/)) {
                 return;
-            } else if (exts2.has(path.extname(basename))) {
-                taskQueue.emit('binary-changed',filename_)
-            } else if (exts.has(path.extname(basename))) {
+            } else if (binaryExts.has(ext)) {
+                taskQueue.emit('binary-changed',absFileName)
+            } else if (sourceExts.has(ext)) {
                 if (!active) {
                     return
                 }
-                var target = findTarget(targets,filename_)
+                var target = findTarget(targets,absFileName)
                 taskQueue.add({cmd:'make',mode:'debug',cwd:target.cwd,kill:target.kill})
             }
         }
@@ -112,8 +79,8 @@ io.on('connection', (socket) => {
     taskQueue.setSocket(socket)
 
     socket.on('get-targets',()=>{
-        //debug('get-targets')
-        var targets = fse.readJsonSync(path.join(__dirname,'targets.json')).map(target => {
+        
+        var targets_ = targets.map(target => {
             var modes = ['debug','release']
 
             target['compileTime'] = {}
@@ -139,46 +106,52 @@ io.on('connection', (socket) => {
             return target
         })
 
-        socket.emit('targets',targets)
+        socket.emit('targets',targets_)
     })
 
-    socket.on('get-bookmarks',()=>{
+    socket.on('get-bookmarks',() => {
         socket.emit('bookmarks',bookmarks)
     })
 
-    socket.on('open-bookmark',(k)=>{
-        debug('open-bookmark',k)
-        spawn(bookmarks[k][0],bookmarks[k][1] || [])
+    socket.on('open-bookmark', bookmark => {
+        let cmd = bookmarks[bookmark][0]
+        let args = bookmarks[bookmark][1] || []
+        spawn(cmd, args)
     })
 
-    socket.on('open-file',filename=>{
-        spawn('C:\\qt\\qtcreator-2.5.2\\bin\\qtcreator.exe',['-client',filename])
+    socket.on('open-file', filename => {
+        let cmd = config.editor[0]
+        let args = [...config.editor[1], filename]
+        spawn(cmd, args)
     })
 
-    socket.on('open-dir',filename=>{
-        spawn('explorer.exe',[filename])
+    socket.on('open-dir', filename => {
+        let cmd = config.explorer[0]
+        let args = [...config.explorer[1], filename]
+        spawn(cmd, args)
     })
 
-    socket.on('set-active',value=>{
+    socket.on('set-active', value=>{
         debug('set-active',value)
         active = value;
     })
 
-    socket.on('compile-all',mode=>{
+    socket.on('compile-all', mode => {
         targets.forEach(target => {
             var task = {cmd:'make',mode:mode,cwd:target.cwd,kill:target.kill}
-            //debug(task)
             taskQueue.add(task)
         })
     })
 
-    socket.on('compile-one',(target)=>{
+    socket.on('compile-one', target => {
         var task = {cmd:'make',mode:target.mode,cwd:target.cwd}
         taskQueue.add(task)
     })
 
-    socket.on('open-project',(p)=>{
-        spawn("C:\\qt\\qtcreator-2.5.2\\bin\\qtcreator.exe",['-client',p])
+    socket.on('open-project', project => {
+        let cmd = config.editor[0]
+        let args = [...config.editor[1], project]
+        spawn(cmd, args)
     })
 
 })

@@ -1,0 +1,6 @@
+{
+    "serialPort": "COM6",
+    "editor": ["C:\\qt\\qtcreator-2.5.2\\bin\\qtcreator.exe",["-client"]],
+    "make": ["mingw32-make",["-j5"]],
+    "explorer": ["explorer.exe",[]]
+}
