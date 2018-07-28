@@ -13,9 +13,9 @@
 ```json
     [{
         "name": "name",
-        "debug": "debug binary path"
-        "release": "release binary path"
-        "cwd": "cwd for make"
+        "debug": "debug binary path",
+        "release": "release binary path",
+        "cwd": "cwd for make",
         "kill": "binaries that you want to kill when 'cannot open output' error happen"
     },...]
 ```
