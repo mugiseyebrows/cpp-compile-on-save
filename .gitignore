@@ -24,3 +24,7 @@ yarn.lock
 package-lock.json
 *.swp
 *~
+
+server/bookmarks.json
+server/config.json
+server/targets.json

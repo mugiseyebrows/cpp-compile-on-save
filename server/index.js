@@ -31,6 +31,17 @@ if (fs.existsSync(build)) {
     app.use(express.static(public))
 }
 
+function copyExampleMaybe(n) {
+    var p = path.join(__dirname,n)
+    if (!fs.existsSync(p)) {
+        fs.copyFileSync(path.join(__dirname, n + '.example'),p)
+    }
+}
+
+copyExampleMaybe('targets.json')
+copyExampleMaybe('bookmarks.json')
+copyExampleMaybe('config.json')
+
 var targets = fse.readJsonSync(path.join(__dirname,'targets.json'))
 var bookmarks = fse.readJsonSync(path.join(__dirname,'bookmarks.json'))
 var config = fse.readJsonSync(path.join(__dirname,'config.json'))
