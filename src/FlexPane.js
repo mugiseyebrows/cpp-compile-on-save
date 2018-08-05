@@ -54,7 +54,7 @@ export class FlexPane extends React.Component {
                 buttonsBefore={this.props.buttonsBefore}
                 buttonsAfter={this.props.buttonsAfter}
                 title={this.props.title} />
-            <div className={classNames("flexpane-pane",classNames_)} ref={refPane} >{this.props.children}</div>
+            <div key={this.props.index} className={classNames("flexpane-pane",classNames_)} ref={refPane} >{this.props.children}</div>
             </React.Fragment>
     }
 }

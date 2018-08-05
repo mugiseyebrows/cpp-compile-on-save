@@ -1,5 +1,4 @@
 
-
 const express = require('express')
 var path = require('path')
 var app = express()
@@ -8,18 +7,16 @@ var io = require('socket.io')(server)
 
 var debug = require('debug')('server')
 const fs = require('fs')
-const fse = require('fs-extra')
-const {spawn} = require('child_process')
 
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
-const CompileStat = require('./CompileStat')
-const {findRoots, findTarget} = require('./Utils')
+const MakeStat = require('./MakeStat')
+const {findRoots, findTarget, copyExampleMaybe, toCmdArgs, spawnDetached, guessPro, updateMtime, updateMakeStat, readJson} = require('./Utils')
 
 var port = 4000;
 server.listen(port, () => {
-    console.log('Server listening at port %d', port);
-});
+    console.log(`Server listening at port ${port}`)
+})
 
 var build = path.join(__dirname,'..', 'build')
 var public = path.join(__dirname,'..', 'public')
@@ -31,27 +28,23 @@ if (fs.existsSync(build)) {
     app.use(express.static(public))
 }
 
-function copyExampleMaybe(n) {
-    var p = path.join(__dirname,n)
-    if (!fs.existsSync(p)) {
-        fs.copyFileSync(path.join(__dirname, n + '.example'),p)
-    }
-}
-
 copyExampleMaybe('targets.json')
 copyExampleMaybe('bookmarks.json')
 copyExampleMaybe('config.json')
 
-var targets = fse.readJsonSync(path.join(__dirname,'targets.json'))
-var bookmarks = fse.readJsonSync(path.join(__dirname,'bookmarks.json'))
-var config = fse.readJsonSync(path.join(__dirname,'config.json'))
+var targets = readJson('targets.json')
+guessPro(targets)
+
+var bookmarks = readJson('bookmarks.json')
+var config = readJson('config.json')
 
 var trafficLights = new TrafficLights(config.serialPort)
-var compileStat = new CompileStat()
+var makeStat = new MakeStat()
 
-var taskQueue = new TaskQueue(compileStat, trafficLights, config)
+var taskQueue = new TaskQueue(makeStat, trafficLights, config)
 
 var roots = findRoots(targets)
+debug('roots',roots)
 
 var active = true;
 
@@ -62,7 +55,7 @@ roots.forEach(root => {
     fs.watch(root,{recursive:true},(event,filename) => {
         
         if (filename === null) {
-            debug('filename is null, weird',event)
+            debug('filename is null',event)
             return
         }
         if (event == "change" || event == "rename") {
@@ -84,18 +77,19 @@ roots.forEach(root => {
     })
 })
 
+
 io.on('connection', (socket) => {
     debug('io connection')
     //taskQueue.socket = socket
     taskQueue.setSocket(socket)
 
-    socket.on('get-targets',()=>{
+    socket.on('targets',()=>{
         
-        var targets_ = targets.map(target => {
+        /*var targets_ = targets.map(target => {
             var modes = ['debug','release']
 
-            target['compileTime'] = {}
-            target['compileCode'] = {}
+            target['makeTime'] = {}
+            target['makeCode'] = {}
             target['Mtime'] = {}
 
             modes.forEach( mode => {
@@ -106,63 +100,124 @@ io.on('connection', (socket) => {
                 }
                 var stat = compileStat.get(target.cwd, mode)
                 if (stat !== null) {
-                    target['compileTime'][mode] = stat.t
-                    target['compileCode'][mode] = stat.code
+                    target['makeTime'][mode] = stat.t
+                    target['makeCode'][mode] = stat.code
                 } else {
-                    target['compileTime'][mode] = null
-                    target['compileCode'][mode] = null
+                    target['makeTime'][mode] = null
+                    target['makeCode'][mode] = null
                 }
             })
 
             return target
-        })
+        })*/
 
-        socket.emit('targets',targets_)
+        updateMakeStat(targets,makeStat)
+        updateMtime(targets)
+
+        socket.emit('targets',targets)
     })
 
-    socket.on('get-bookmarks',() => {
+    socket.on('bookmarks',() => {
         socket.emit('bookmarks',bookmarks)
     })
 
     socket.on('open-bookmark', bookmark => {
-        let cmd = bookmarks[bookmark][0]
-        let args = bookmarks[bookmark][1] || []
-        spawn(cmd, args)
+        let [cmd, args] = toCmdArgs(bookmarks[bookmark])
+        spawnDetached(cmd, args)
     })
 
-    socket.on('open-file', filename => {
-        let cmd = config.editor[0]
-        let args = [...config.editor[1], filename]
-        spawn(cmd, args)
+    socket.on('open-file', obj => {
+        let pathArg
+        if (path.isAbsolute(obj.path)) {
+            pathArg = obj.path
+        } else {
+            pathArg = path.join(obj.cwd, obj.path)
+        }
+        if (obj.lineNum !== null) {
+            pathArg = pathArg + ':' + obj.lineNum
+        }
+        let [cmd, args] = toCmdArgs(config.editor, [pathArg])
+        console.log(cmd, args)
+        spawnDetached(cmd, args)
     })
 
-    socket.on('open-dir', filename => {
-        let cmd = config.explorer[0]
-        let args = [...config.explorer[1], filename]
-        spawn(cmd, args)
-    })
+    /*socket.on('open-dir', filename => {
+        let [cmd,args] = toCmdArgs(config.explorer, [filename])
+        spawnDetached(cmd, args)
+    })*/
 
     socket.on('set-active', value=>{
         debug('set-active',value)
         active = value;
     })
 
-    socket.on('compile-all', mode => {
+    /*socket.on('gitk', cwd => {
+        let [cmd, args] = toCmdArgs(config.gitk)
+        spawnDetached(cmd, args, {cwd:cwd})
+    })*/
+
+    
+    /*socket.on('git-bash', cwd => {
+        let [cmd, args] = toCmdArgs(config.gitBash)
+        spawnDetached(cmd, args, {cwd:cwd})
+    })*/
+
+    socket.on('make-all', mode => {
+        debug('make-all',mode)
         targets.forEach(target => {
-            var task = {cmd:'make',mode:mode,cwd:target.cwd,kill:target.kill}
+            var task = {cmd:'make', mode:mode, cwd:target.cwd, kill:target.kill}
             taskQueue.add(task)
         })
     })
 
-    socket.on('compile-one', target => {
-        var task = {cmd:'make',mode:target.mode,cwd:target.cwd}
+    /*socket.on('make-one', target => {
+        var task = {cmd:'make', mode:target.mode, cwd:target.cwd}
         taskQueue.add(task)
-    })
+    })*/
 
-    socket.on('open-project', project => {
-        let cmd = config.editor[0]
-        let args = [...config.editor[1], project]
-        spawn(cmd, args)
+    /*socket.on('open-project', project => {
+        let [cmd, args] = toCmdArgs(config.editor, [project])
+        spawnDetached(cmd, args)
+    })*/
+
+    socket.on('project-command', opts => {
+        let {command, target, mode} = opts;
+        
+        debug('project-command', opts)
+
+        let commands = {
+            edit: () => {
+                let [cmd, args] = toCmdArgs(config.editor, [target.pro])
+                spawnDetached(cmd, args)
+            },
+            qmake: () => {
+                var task = {cmd:'qmake', mode:mode, cwd:target.cwd}
+                taskQueue.add(task)
+            },
+            gitk: () => {
+                let [cmd, args] = toCmdArgs(config.gitk)
+                spawnDetached(cmd, args, {cwd:target.cwd})
+            },
+            bash: () => {
+                let [cmd, args] = toCmdArgs(config.bash)
+                spawnDetached(cmd, args, {cwd:target.cwd})
+            },
+            make: () => {
+                var task = {cmd:'make', mode:mode, cwd:target.cwd}
+                taskQueue.add(task)
+            },
+            explore: () => {
+                let [cmd,args] = toCmdArgs(config.explorer, [target.cwd])
+                spawnDetached(cmd, args)
+            }
+        }
+
+        if (commands[command] == null) {
+            console.log('unexpected project-command',command)
+        } else {
+            commands[command]();
+        }
+        
     })
 
 })

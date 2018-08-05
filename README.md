@@ -30,11 +30,11 @@
 
 open [http://localhost:4000](http://localhost:4000)
 
-## Hack (you need two shells)
-
-`rd /s /q build`
+## Hack 
 
 first shell (frontend)
+
+`rd /s /q build`
 
 `npm run start`
 
@@ -42,6 +42,6 @@ second shell (backend)
 
 `set DEBUG=server`
 
-`nodemon server\index.js`
+`nodemon --watch server server\index.js`
 
 open [http://localhost:3000](http://localhost:3000)

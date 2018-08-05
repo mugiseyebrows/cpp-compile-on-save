@@ -2,5 +2,8 @@
     "serialPort": "COM6",
     "editor": ["C:\\qt\\qtcreator-2.5.2\\bin\\qtcreator.exe",["-client"]],
     "make": ["mingw32-make.exe",["-j4"]],
-    "explorer": ["explorer.exe",[]]
+    "explorer": ["explorer.exe"],
+    "gitk": ["C:\\Git\\cmd\\gitk",["--all"]],
+    "bash": ["C:\\git\\git-bash.exe"],
+    "qmake": ["qmake.exe"]
 }

@@ -1,5 +1,5 @@
 
-class CompileStat {
+class MakeStat {
 
     constructor() {
         this.stat = []
@@ -26,4 +26,4 @@ class CompileStat {
    
 }
 
-module.exports = CompileStat
+module.exports = MakeStat

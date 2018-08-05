@@ -3,6 +3,7 @@
 var debug = require('debug')('server')
 const fkill = require('fkill')
 const {spawn} = require('child_process')
+const {toCmdArgs} = require('./Utils')
 
 class TaskQueue {
     constructor(compileStat,trafficLights,config) {
@@ -77,25 +78,31 @@ class TaskQueue {
             
             //debug(`compiling ${cwd}`)
 
-            if (task.cmd == 'make') {
+            if (task.cmd == 'make' || task.cmd == 'qmake') {
 
                 var cwd = task.cwd
 
                 var t = +new Date()
-                this.emit('proc-start', {cwd:task.cwd, mode:task.mode})
+                this.emit('proc-start', {cwd:task.cwd, mode:task.mode, cmd:task.cmd})
                 
-                var makeCmd = this.config.make[0]
-                var makeArgs = [task.mode, ...this.config.make[1]]
-                this.proc = spawn(makeCmd,makeArgs,{cwd:cwd})
+                var cmd, args
+                if (task.cmd == 'make') {
+                    [cmd, args] = toCmdArgs(this.config.make, [task.mode])
+                } else {
+                    [cmd, args] = toCmdArgs(this.config.qmake)
+                }
 
+                debug(cmd, args)
+                this.proc = spawn(cmd, args, {cwd:cwd})
                 this.trafficLights.blue()
 
                 this.proc.stdout.on('data',(data)=>{
                     this.emit('proc-stdout',{data:data.toString(),cwd:cwd})
+                    //debug('stdout',cmd,cwd)
                 })
 
                 this.proc.stderr.on('data',(data)=>{
-                    //debug('stderr',data.toString())
+                    //debug('stderr',cmd,cwd)
 
                     var lines = data.toString().split('\r\n')
                     if (lines.filter(line => line.indexOf('cannot open output') > -1).length > 0 ) {
@@ -110,6 +117,7 @@ class TaskQueue {
                     }
 
                     this.emit('proc-stderr',{data:data.toString(),cwd:cwd})
+                    //debug('proc-stderr',data.toString())
                 })
 
                 this.proc.on('exit',(code)=>{
