@@ -85,32 +85,6 @@ io.on('connection', (socket) => {
 
     socket.on('targets',()=>{
         
-        /*var targets_ = targets.map(target => {
-            var modes = ['debug','release']
-
-            target['makeTime'] = {}
-            target['makeCode'] = {}
-            target['Mtime'] = {}
-
-            modes.forEach( mode => {
-                if (fs.existsSync(target[mode])) {
-                    target['Mtime'][mode] = fs.statSync(target[mode]).mtime
-                } else {
-                    target['Mtime'][mode] = null
-                }
-                var stat = compileStat.get(target.cwd, mode)
-                if (stat !== null) {
-                    target['makeTime'][mode] = stat.t
-                    target['makeCode'][mode] = stat.code
-                } else {
-                    target['makeTime'][mode] = null
-                    target['makeCode'][mode] = null
-                }
-            })
-
-            return target
-        })*/
-
         updateMakeStat(targets,makeStat)
         updateMtime(targets)
 
@@ -137,30 +111,14 @@ io.on('connection', (socket) => {
             pathArg = pathArg + ':' + obj.lineNum
         }
         let [cmd, args] = toCmdArgs(config.editor, [pathArg])
-        console.log(cmd, args)
+        debug(cmd, args)
         spawnDetached(cmd, args)
     })
-
-    /*socket.on('open-dir', filename => {
-        let [cmd,args] = toCmdArgs(config.explorer, [filename])
-        spawnDetached(cmd, args)
-    })*/
 
     socket.on('set-active', value=>{
         debug('set-active',value)
         active = value;
     })
-
-    /*socket.on('gitk', cwd => {
-        let [cmd, args] = toCmdArgs(config.gitk)
-        spawnDetached(cmd, args, {cwd:cwd})
-    })*/
-
-    
-    /*socket.on('git-bash', cwd => {
-        let [cmd, args] = toCmdArgs(config.gitBash)
-        spawnDetached(cmd, args, {cwd:cwd})
-    })*/
 
     socket.on('make-all', mode => {
         debug('make-all',mode)
@@ -169,16 +127,6 @@ io.on('connection', (socket) => {
             taskQueue.add(task)
         })
     })
-
-    /*socket.on('make-one', target => {
-        var task = {cmd:'make', mode:target.mode, cwd:target.cwd}
-        taskQueue.add(task)
-    })*/
-
-    /*socket.on('open-project', project => {
-        let [cmd, args] = toCmdArgs(config.editor, [project])
-        spawnDetached(cmd, args)
-    })*/
 
     socket.on('project-command', opts => {
         let {command, target, mode} = opts;

@@ -4,94 +4,11 @@ import './App.css'
 import './FlexPane.css'
 import {FlexPane, FlexPaneContainer} from './FlexPane'
 import io from 'socket.io-client'
-import moment from 'moment'
 import classNames from "classnames"
 import CheckBox from './CheckBox'
 import Select from 'react-select'
 
-
-function findPath(text) {
-  var m1 = text.match(/([A-Z][:][^ :]+)[.](cpp|h)/)
-  var m2 = text.match(/([^ :]+)[.](cpp|h)/)
-  if (m1) {
-    return m1[1] + '.' + m1[2]
-  } else if (m2) {
-    return m2[1] + '.' + m2[2]
-  }
-  return null
-}
-
-function putLinks(text, cwd, fn) {
-
-  if (text.split == null) {
-    console.log('putLinks error',text)
-  }
-
-  var items = text.split('\r\n').map((line,j) => {
-    
-    var res = []
-
-    let path = findPath(line) 
-    while (path !== null) {
-      var parts = line.split(path,2)
-      res.push(parts[0])
-      var m = parts[1].match(/^[:]([0-9]+)/)
-      var lineNum = null
-      if (m) {
-        lineNum = m[1]
-      } 
-      res.push(<a key={res.length} href="#" onClick={fn.bind(null, cwd, path, lineNum)}>{path}</a>)
-      line = parts[1]
-      path = findPath(line)
-    }
-    res.push(line)
-
-    return <li key={j}>{res}</li>
-    
-    /*if (path !== null) {
-      var parts = line.split(path)
-      var m = parts[1].match(/^[:]([0-9]+)/)
-      var lineNum = 1
-      if (m) {
-        lineNum = m[1]
-      }
-      return <li key={j}>{parts[0]}<a href="#" onClick={() => fn(cwd, path, lineNum)}>{path}</a>{parts.slice(1).join(path)}</li>
-    } else {
-      return <li key={j}>{line}</li>
-    }*/
-
-    /*
-    var path = null
-    var lineNum = null
-    var colNum = null
-    var rest = null
-    
-    if (m1) {
-      path = m1[0] + '.' + m1[1]
-      lineNum = m1[2]
-      colNum = m1[3]
-      rest = m1[4]
-      return <li key={j}><a href="#" onClick={() => fn(cwd, path, lineNum)}>{path}</a>:{lineNum}:{colNum}:{rest}</li>
-    } else if (m2) {
-      path = m2[0] + '.' + m2[1]
-      lineNum = m2[2]
-      rest = m2[3]
-      return <li key={j}><a href="#" onClick={() => fn(cwd, path, lineNum)}>{path}</a>:{lineNum}:{rest}</li>
-    } else if (m3) {
-      path = m3[0] + '.' + m3[1]
-      rest = m3[2]
-      return <li key={j}><a href="#" onClick={() => fn(cwd, path, lineNum)}>{path}</a>:{rest}</li>
-    } else {
-      return <li key={j}>{line}</li>
-    }
-    */
-
-
-
-  })
-
-  return items
-}
+import {mtimeFromNow, putLinks} from './Utils'
 
 class App extends Component {
 
@@ -188,10 +105,6 @@ class App extends Component {
       this.setState({bookmarks:bookmarks})
     })
 
-    /*fetch('/public/data.json')
-      .then(data => data.json())
-      .then(json => this.setState({panes:json}))*/
-
     var isActive = this.state.isActive
     
     socket.emit('targets')
@@ -203,20 +116,6 @@ class App extends Component {
     this.socket = socket
   }
 
-  mtimeFromNow = (d) => {
-    return moment(d,"YYYY-MM-DDTHH:mm:ss.SSSZ").fromNow()
-  }
-
-  /*
-  handleFileClick = (filename) => {
-    this.socket.emit('open-file',filename)
-  }*/
-
-  /*
-  handleDirClick = (filename) => {
-    this.socket.emit('open-dir',filename)
-  }*/
-
   handleActiveChange = (e) => {
     var isActive = this.state.isActive
     isActive = !isActive
@@ -227,21 +126,7 @@ class App extends Component {
   handleMakeAll = (mode) => {
     this.socket.emit('make-all',mode)
   }
-  /*
-  handleMakeOne = (mode, cwd) => {
-    this.socket.emit('make-one',{cwd:cwd,mode:mode})
-  }*/
-
-  /*
-  handleOpenProject = (target) => {
-    if (target.pro != null) {
-      this.socket.emit('open-project',target.pro)
-    } else {
-      var pro = target.cwd + "\\" + target.name + ".pro"
-      this.socket.emit('open-project',pro)
-    }
-  }*/
-
+  
   handleBookmark = (k) => {
     this.socket.emit('open-bookmark',k)
   }
@@ -249,15 +134,6 @@ class App extends Component {
   componentDidMount() {
     //console.log(this.refStdout,this.refStdout.current)
   }
-
-  /*
-  handleGitkProject(target) {
-    this.socket.emit('gitk',target.cwd)
-  }
-
-  handleGitBashProject(target) {
-    this.socket.emit('git-bash',target.cwd)
-  }*/
 
   handleModeChange = (newValue) => {
     //console.log(newValue)
@@ -287,17 +163,7 @@ class App extends Component {
     })
     this.state.stderr.forEach((item,i) => { 
       stderr.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
-      //stderr.push(<div key={i*2+1} className="proc-data">{item.data}</div>)
-
-      /*var data = item.data.split('\r\n').map((e,j) => {
-        var cols = e.split(':')
-        if (cols[0].endsWith('.cpp') || cols[0].endsWith('.h')) {
-          var winpath = path.join(item.cwd,cols[0]).replace('/','\\')
-          return <li key={j}><a href="#" onClick={() => this.handleFileClick(winpath)}>{cols[0]}</a>:{cols.slice(1).join(':')}</li>
-        } 
-        return <li key={j}>{e}</li>
-      })*/
-
+      
       let items = putLinks(item.data, item.cwd, this.handleOpenFile)
       stderr.push(<ul key={i*2+1}>{items}</ul>)
     })
@@ -306,30 +172,17 @@ class App extends Component {
 
     this.state.errors.forEach((item,i) => {
       if (item.data.length > 0) {
-        /*var children = item.data.map((e,j) => {
-          var cols = e.split(':')
-          if (cols[0].endsWith('.cpp') || cols[0].endsWith('.h')) {
-            var winpath = path.join(item.cwd,cols[0]).replace('/','\\')
-            return <li key={j}><a href="#" onClick={() => this.handleFileClick(winpath)}>{cols[0]}</a>:{cols.slice(1).join(':')}</li>
-          } else {
-            return <li key={j}>{e}</li>
-          }
-        })*/
-
+        
         let children = putLinks(item.data.join('\r\n'), item.cwd, this.handleOpenFile)
         
         errors.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
         errors.push(<ul key={i*2+1} className="proc-data" >{children}</ul>)
       }
     })
-    //console.log('errors',this.state.errors)
-
+    
     var targetsBody = this.state.targets.map( (target,i) => {
     
-        /*var debugTime = this.mtimeFromNow(target.Mtime['debug'])
-        var releaseTime = this.mtimeFromNow(target.Mtime['release'])*/
-
-        let makeTime_ = this.mtimeFromNow(target.Mtime[modeValue])
+        let makeTime_ = mtimeFromNow(target.Mtime[modeValue])
 
         var makeTime = target.makeTime[modeValue] != null ? `${target.makeTime[modeValue] / 1000}` : ''
         var makeCode = target.makeCode[modeValue]
