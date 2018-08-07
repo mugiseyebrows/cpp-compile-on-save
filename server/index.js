@@ -46,7 +46,8 @@ var taskQueue = new TaskQueue(makeStat, trafficLights, config)
 var roots = findRoots(targets)
 debug('roots',roots)
 
-var active = true;
+var active = true
+var mode = 'debug'
 
 var sourceExts = new Set(['.ui','.cpp','.h','.pro'])
 var binaryExts = new Set(['.dll','.exe'])
@@ -71,7 +72,7 @@ roots.forEach(root => {
                     return
                 }
                 var target = findTarget(targets,absFileName)
-                taskQueue.add({cmd:'make',mode:'debug',cwd:target.cwd,kill:target.kill})
+                taskQueue.add({cmd:'make',mode:mode,cwd:target.cwd,kill:target.kill})
             }
         }
     })
@@ -118,6 +119,11 @@ io.on('connection', (socket) => {
     socket.on('set-active', value=>{
         debug('set-active',value)
         active = value;
+    })
+
+    socket.on('set-mode', newMode => {
+        debug('set-mode', newMode)
+        mode = newMode
     })
 
     socket.on('make-all', mode => {

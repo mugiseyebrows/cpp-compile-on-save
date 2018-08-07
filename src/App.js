@@ -113,6 +113,8 @@ class App extends Component {
     
     socket.emit('set-active',isActive)
 
+    socket.emit('set-mode', this.state.mode.value)
+
     this.socket = socket
   }
 
@@ -136,8 +138,8 @@ class App extends Component {
   }
 
   handleModeChange = (newValue) => {
-    //console.log(newValue)
     this.setState({mode:newValue})
+    this.socket.emit('set-mode',newValue.value)
   }
 
   handleProjectCommand = (command, target, mode) => {
@@ -168,7 +170,7 @@ class App extends Component {
       stderr.push(<ul key={i*2+1}>{items}</ul>)
     })
 
-    let modeValue = this.state.mode.value
+    let mode = this.state.mode.value
 
     this.state.errors.forEach((item,i) => {
       if (item.data.length > 0) {
@@ -182,16 +184,16 @@ class App extends Component {
     
     var targetsBody = this.state.targets.map( (target,i) => {
     
-        let makeTime_ = mtimeFromNow(target.Mtime[modeValue])
+        let makeTime_ = mtimeFromNow(target.Mtime[mode])
 
-        var makeTime = target.makeTime[modeValue] != null ? `${target.makeTime[modeValue] / 1000}` : ''
-        var makeCode = target.makeCode[modeValue]
+        var makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
+        var makeCode = target.makeCode[mode]
 
         return (<tr key={i} className={classNames({"compile-success":makeCode === 0, "compile-error":makeCode !== 0 && makeCode !== null})}>
-              <td><a href="#" onClick={(e)=>{e.preventDefault(); console.log('explore', target); this.handleProjectCommand('explore', target)}}> {target.name} </a></td>
+              <td><a href="#" onClick={(e)=>{e.preventDefault(); this.handleProjectCommand('explore', target)}}> {target.name} </a></td>
               <td>{makeTime_}</td>
               <td>
-                <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, modeValue)}>make</button>
+                <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, mode)}>make</button>
                 <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, 'clean')}>clean</button>
 
                 <div className="dropdown">
@@ -225,8 +227,12 @@ class App extends Component {
     }
 
     setTimeout(()=>{
-      this.refStdout.current.scrollTo(0,10000)
-      this.refStderr.current.scrollTo(0,10000)
+      /*this.refStdout.current.scrollTo(0,10000)
+      this.refStderr.current.scrollTo(0,10000)*/
+
+      let es = [this.refStdout.current, this.refStderr.current]
+      es.forEach( e => e.scrollTop = e.scrollHeight )
+
     },10)
 
     var modeOptions = [{value:'debug',label:'debug'},{value:'release',label:'release'}]
@@ -239,7 +245,7 @@ class App extends Component {
             <div className="compile-label"> mode </div>,
             <Select className="react-select__wrap" classNamePrefix="react-select" value={this.state.mode} onChange={this.handleModeChange} options={modeOptions} />,
             <div className="compile-label"> all </div>,
-            <button key="0" className="compile" onClick={() => this.handleMakeAll(modeValue)}>make</button>,
+            <button key="0" className="compile" onClick={() => this.handleMakeAll(mode)}>make</button>,
             <button key="1" className="compile" onClick={() => this.handleMakeAll('clean')}>clean</button>,
             ]} >
             

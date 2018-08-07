@@ -6,12 +6,12 @@ const {spawn} = require('child_process')
 const {toCmdArgs} = require('./Utils')
 
 class TaskQueue {
-    constructor(compileStat,trafficLights,config) {
+    constructor(makeStat,trafficLights,config) {
         this.proc = null
         this.tasks = []
         this.socket = null
         this.handle = null
-        this.compileStat = compileStat
+        this.makeStat = makeStat
         this.trafficLights = trafficLights
         this.config = config
     }
@@ -31,7 +31,7 @@ class TaskQueue {
         if (newTask.cwd == null) {
             return false;
         }
-        return this.tasks.filter( task => task.cwd == newTask.cwd && task.mode == newTask.mode ).length > 0;
+        return this.tasks.filter( task => task.cwd == newTask.cwd && task.mode == newTask.mode && task.cmd == newTask.cmd ).length > 0;
     }
 
     add(newTask, front) {
@@ -131,9 +131,10 @@ class TaskQueue {
                     } else {
                         this.trafficLights.red()
                     }
-
-                    this.compileStat.set(task.cwd, task.mode, code, t)
-
+                    if (task.cmd == 'make') {
+                        this.makeStat.set(task.cwd, task.mode, code, t)
+                    }
+                    
                     this.add(null)
                 })
 

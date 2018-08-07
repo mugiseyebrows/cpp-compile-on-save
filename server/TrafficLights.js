@@ -2,12 +2,15 @@
 
 
 var SerialPort = require('serialport')
+var debug = require('debug')('server')
 
 class TrafficLights {
 
     constructor(serialPort) {
         if (serialPort != null)  {
-            this.port = new SerialPort(serialPort);
+            this.port = new SerialPort(serialPort)
+            debug(`${serialPort} open`)
+
         } else {
             this.port = {write:()=>{}}
         }
