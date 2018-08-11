@@ -158,15 +158,16 @@ class App extends Component {
     var errors = []
     this.state.stdout.forEach((item,i) => { 
       stdout.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
-
-      let items = putLinks(item.data, item.cwd, this.handleOpenFile)
-
+      let items = []
+      //items = item.data.split('\r\n')
+      items = putLinks(item.data, item.cwd, this.handleOpenFile)
       stdout.push(<ul key={i*2+1} className="proc-data">{items}</ul>)
     })
     this.state.stderr.forEach((item,i) => { 
       stderr.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
-      
-      let items = putLinks(item.data, item.cwd, this.handleOpenFile)
+      let items = []
+      //items = item.data.split('\r\n')
+      items = putLinks(item.data, item.cwd, this.handleOpenFile)
       stderr.push(<ul key={i*2+1}>{items}</ul>)
     })
 
@@ -264,10 +265,10 @@ class App extends Component {
           <FlexPane title="errors">
             <div className="errors">{errors}</div>
           </FlexPane>
-          <FlexPane title="stdout" mode="hidden" refPane={this.refStdout} className="stdout" >
+          <FlexPane title="stdout" refPane={this.refStdout} className="stdout" >
             {stdout}
           </FlexPane>
-          <FlexPane title="stderr" mode="hidden" refPane={this.refStderr} className="stderr" >
+          <FlexPane title="stderr" refPane={this.refStderr} className="stderr" >
             {stderr}
           </FlexPane>
         </FlexPaneContainer>
