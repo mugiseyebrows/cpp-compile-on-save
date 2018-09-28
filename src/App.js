@@ -20,8 +20,8 @@ class App extends Component {
       errors: [],
       targets: [],
       tasks: [],
-      isActive: true,
-      mode: {value:'debug',label:'debug'}
+      isActive: false,
+      mode: {value:'',label:''}
     }
 
     this.refStdout = React.createRef()
@@ -104,16 +104,27 @@ class App extends Component {
     socket.on('bookmarks',(bookmarks) => {
       this.setState({bookmarks:bookmarks})
     })
-
-    var isActive = this.state.isActive
     
+    socket.on('is-active', (isActive) => {
+      this.setState({isActive:isActive})
+    })
+
+    socket.on('get-mode',(mode)=>{
+      var mode_ = {value:mode, label:mode}
+      this.setState({mode:mode_})
+    })
+
     socket.emit('targets')
 
     socket.emit('bookmarks')
     
-    socket.emit('set-active',isActive)
+    //socket.emit('set-active',isActive)
 
-    socket.emit('set-mode', this.state.mode.value)
+    socket.emit('is-active')
+
+    //socket.emit('set-mode', this.state.mode.value)
+
+    socket.emit('get-mode')
 
     this.socket = socket
   }
@@ -138,8 +149,8 @@ class App extends Component {
   }
 
   handleModeChange = (newValue) => {
-    this.setState({mode:newValue})
-    this.socket.emit('set-mode',newValue.value)
+    //this.setState({mode:newValue})
+    this.socket.emit('set-mode', newValue.value)
   }
 
   handleProjectCommand = (command, target, mode) => {
@@ -149,6 +160,10 @@ class App extends Component {
   handleOpenFile = (cwd, path, lineNum) => {
     //console.log('handleOpenFile', cwd, path, lineNum)
     this.socket.emit('open-file',{cwd:cwd, path:path, lineNum:lineNum})
+  }
+
+  handleCancelQueuedTasks = () => {
+    this.socket.emit('cancel-queued',{})
   }
 
   render() {
@@ -259,7 +274,9 @@ class App extends Component {
             </ul>
 
           </FlexPane>
-          <FlexPane title="tasks">
+          <FlexPane title="tasks" buttonsAfter={[
+            <button key="0" onClick={() => this.handleCancelQueuedTasks()}>cancel</button>
+          ]}>
             {tasks}
           </FlexPane>
           <FlexPane title="errors">

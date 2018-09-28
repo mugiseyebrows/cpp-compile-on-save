@@ -118,20 +118,36 @@ io.on('connection', (socket) => {
 
     socket.on('set-active', value=>{
         debug('set-active',value)
-        active = value;
+        active = value
+    })
+
+    socket.on('is-active',()=>{
+        debug('is-active',active)
+        socket.emit('is-active',active)
     })
 
     socket.on('set-mode', newMode => {
         debug('set-mode', newMode)
         mode = newMode
+        socket.emit('get-mode',mode)
+    })
+
+    socket.on('get-mode', () => {
+        debug('get-mode', mode)
+        socket.emit('get-mode', mode)
     })
 
     socket.on('make-all', mode => {
-        debug('make-all',mode)
+        debug('make-all', mode)
         targets.forEach(target => {
             var task = {cmd:'make', mode:mode, cwd:target.cwd, kill:target.kill}
             taskQueue.add(task)
         })
+    })
+
+    socket.on('cancel-queued', () => {
+        debug('cancel-queued')
+        taskQueue.clean()
     })
 
     socket.on('project-command', opts => {

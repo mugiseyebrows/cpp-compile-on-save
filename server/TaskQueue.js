@@ -24,14 +24,18 @@ class TaskQueue {
         if (this.socket == null) {
             return;
         }
-        this.socket.emit(type,data);
+        this.socket.emit(type,data)
     }
 
     hasTask(newTask) {
         if (newTask.cwd == null) {
             return false;
         }
-        return this.tasks.filter( task => task.cwd == newTask.cwd && task.mode == newTask.mode && task.cmd == newTask.cmd ).length > 0;
+        return this.tasks.filter( task => task.cwd == newTask.cwd && task.mode == newTask.mode && task.cmd == newTask.cmd ).length > 0
+    }
+
+    clean() {
+        this.tasks = []
     }
 
     add(newTask, front) {
