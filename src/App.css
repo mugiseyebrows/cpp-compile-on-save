@@ -129,3 +129,11 @@ ul.bookmarks li {
 .proc-data {
   padding: 0 0 10px 0;
 }
+
+.hidden {
+  display: none;
+}
+
+.targets tr td input {
+  max-width: 100px;
+}

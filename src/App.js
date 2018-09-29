@@ -10,6 +10,15 @@ import Select from 'react-select'
 
 import {mtimeFromNow, putLinks} from './Utils'
 
+class Input extends Component {
+  constructor(props) {
+    super(props)
+  }
+  render() {
+    return <input type="text" value={this.props.value} onChange={(e) => this.props.handleChange(e)}/>
+  }
+}
+
 class App extends Component {
 
   constructor() {
@@ -21,7 +30,8 @@ class App extends Component {
       targets: [],
       tasks: [],
       isActive: false,
-      mode: {value:'',label:''}
+      mode: {value:'',label:''},
+      targetsFilter: ''
     }
 
     this.refStdout = React.createRef()
@@ -136,6 +146,10 @@ class App extends Component {
     this.socket.emit('set-active',isActive)
   }
 
+  handleEditTargets = () => {
+    this.socket.emit('edit-targets')
+  }
+
   handleMakeAll = (mode) => {
     this.socket.emit('make-all',mode)
   }
@@ -166,11 +180,23 @@ class App extends Component {
     this.socket.emit('cancel-queued',{})
   }
 
-  render() {
+  handleClean = (subj) => {
+    var x = {
+      'errors': () => {this.setState({errors:[]})},
+      'stdout': () => {this.setState({stdout:[]})},
+      'stderr': () => {this.setState({stderr:[]})}
+    }
+    if (x[subj] != null) {
+      x[subj]()
+    }
+  }
 
+  handleTargetsFilterChange = (e) => {
+    this.setState({targetsFilter:e.target.value})
+  }
+
+  renderStdout = () => {
     var stdout = []
-    var stderr = []
-    var errors = []
     this.state.stdout.forEach((item,i) => { 
       stdout.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
       let items = []
@@ -178,6 +204,11 @@ class App extends Component {
       items = putLinks(item.data, item.cwd, this.handleOpenFile)
       stdout.push(<ul key={i*2+1} className="proc-data">{items}</ul>)
     })
+    return stdout
+  }
+
+  renderStderr = () => {
+    var stderr = []
     this.state.stderr.forEach((item,i) => { 
       stderr.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
       let items = []
@@ -185,9 +216,11 @@ class App extends Component {
       items = putLinks(item.data, item.cwd, this.handleOpenFile)
       stderr.push(<ul key={i*2+1}>{items}</ul>)
     })
+    return stderr
+  }
 
-    let mode = this.state.mode.value
-
+  renderErrors = () => {
+    var errors = []
     this.state.errors.forEach((item,i) => {
       if (item.data.length > 0) {
         
@@ -197,38 +230,75 @@ class App extends Component {
         errors.push(<ul key={i*2+1} className="proc-data" >{children}</ul>)
       }
     })
+    return errors
+  }
+
+  renderTargets = () => {
+
+    let mode = this.state.mode.value
+
+    var targetsHeader = <tr><th>name</th><th>made</th><th>make</th><th>make time</th></tr>
+
+    var targetsFilter = <tr><td className="targetsFilter"><Input value={this.state.targetsFilter} handleChange={(e) => this.handleTargetsFilterChange(e)}/></td><td> </td><td> </td><td> </td></tr>
+
+    var f = this.state.targetsFilter
     
     var targetsBody = this.state.targets.map( (target,i) => {
     
-        let makeTime_ = mtimeFromNow(target.Mtime[mode])
+      let makeTime_ = mtimeFromNow(target.Mtime[mode])
 
-        var makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
-        var makeCode = target.makeCode[mode]
+      var makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
+      var makeCode = target.makeCode[mode]
 
-        return (<tr key={i} className={classNames({"compile-success":makeCode === 0, "compile-error":makeCode !== 0 && makeCode !== null})}>
-              <td><a href="#" onClick={(e)=>{e.preventDefault(); this.handleProjectCommand('explore', target)}}> {target.name} </a></td>
-              <td>{makeTime_}</td>
-              <td>
-                <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, mode)}>make</button>
-                <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, 'clean')}>clean</button>
+      //console.log(target.name,f,target.name.indexOf(f) > -1)
 
-                <div className="dropdown">
-                  <div>&nbsp;...&nbsp;</div>
-                  <div className="dropdown-content">
-                    <button className="make-button" onClick={()=>this.handleProjectCommand('edit',target)}>edit</button>
-                    <button className="make-button" onClick={()=>this.handleProjectCommand('qmake',target)}>qmake</button>
-                    <button className="make-button" onClick={()=>this.handleProjectCommand('gitk',target)}>gitk</button>
-                    <button className="make-button" onClick={()=>this.handleProjectCommand('bash',target)}>bash</button>
-                    <button className="make-button" onClick={()=>this.handleProjectCommand('explore',target)}>explore</button>
-                  </div>
+      var rowClasses = classNames({
+        "hidden": target.name.indexOf(f) < 0, 
+        "compile-success": makeCode === 0, 
+        "compile-error":makeCode !== 0 && makeCode !== null
+      })
+
+      console.log(rowClasses)
+
+      return (<tr key={i} className={rowClasses}>
+            <td><a href="#" onClick={(e)=>{e.preventDefault(); this.handleProjectCommand('explore', target)}}> {target.name} </a></td>
+            <td>{makeTime_}</td>
+            <td>
+              <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, mode)}>make</button>
+              <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, 'clean')}>clean</button>
+
+              <div className="dropdown">
+                <div>&nbsp;...&nbsp;</div>
+                <div className="dropdown-content">
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('edit',target)}>edit</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('qmake',target)}>qmake</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('gitk',target)}>gitk</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('bash',target)}>bash</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('explore',target)}>explore</button>
                 </div>
+              </div>
 
-              </td>
-              <td>{makeTime}</td>
-              </tr>)
+            </td>
+            <td>{makeTime}</td>
+            </tr>)
     })
 
-    var targetsHeader = <tr><th>name</th><th>made</th><th>make</th><th>make time</th></tr>
+    return (<table className="targets">
+              <thead>{targetsHeader}</thead>
+              <tbody>{targetsFilter}{targetsBody}</tbody>
+            </table>)
+  }
+
+  render() {
+
+    var stdout = this.renderStdout()
+    var stderr = this.renderStderr()
+    var errors = this.renderErrors()
+    
+    
+    let mode = this.state.mode.value
+    
+    let targets = this.renderTargets()
 
     var tasks = null
 
@@ -257,6 +327,7 @@ class App extends Component {
       <div className="App">
         <FlexPaneContainer>
           <FlexPane title="targets" buttonsAfter={[
+            <button onClick={()=>this.handleEditTargets()}>edit</button>,
             <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />,
             <div className="compile-label"> mode </div>,
             <Select className="react-select__wrap" classNamePrefix="react-select" value={this.state.mode} onChange={this.handleModeChange} options={modeOptions} />,
@@ -264,28 +335,25 @@ class App extends Component {
             <button key="0" className="compile" onClick={() => this.handleMakeAll(mode)}>make</button>,
             <button key="1" className="compile" onClick={() => this.handleMakeAll('clean')}>clean</button>,
             ]} >
-            
-            <table className="targets">
-              <thead>{targetsHeader}</thead>
-              <tbody>{targetsBody}</tbody>
-            </table>
+            {targets}
             <ul className="bookmarks">
               {bookmarks}
             </ul>
-
           </FlexPane>
-          <FlexPane title="tasks" buttonsAfter={[
-            <button key="0" onClick={() => this.handleCancelQueuedTasks()}>cancel</button>
-          ]}>
+          <FlexPane title="tasks" buttonsAfter={[<button key="0" onClick={() => this.handleCancelQueuedTasks()}>cancel</button>]}>
             {tasks}
           </FlexPane>
-          <FlexPane title="errors">
+          <FlexPane title="errors" buttonsAfter={[<button key="0" onClick={() => this.handleClean('errors')}>clean</button>]}>
             <div className="errors">{errors}</div>
           </FlexPane>
-          <FlexPane title="stdout" refPane={this.refStdout} className="stdout" >
+          <FlexPane title="stdout" refPane={this.refStdout} className="stdout" buttonsAfter={[
+            <button key="0" onClick={() => this.handleClean('stdout')}>clean</button>
+          ]}>
             {stdout}
           </FlexPane>
-          <FlexPane title="stderr" refPane={this.refStderr} className="stderr" >
+          <FlexPane title="stderr" refPane={this.refStderr} className="stderr" buttonsAfter={[
+            <button key="0" onClick={() => this.handleClean('stderr')}>clean</button>
+          ]}>
             {stderr}
           </FlexPane>
         </FlexPaneContainer>

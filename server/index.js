@@ -150,6 +150,13 @@ io.on('connection', (socket) => {
         taskQueue.clean()
     })
 
+    socket.on('edit-targets',()=>{
+        debug('edit-targets')
+        let targets = path.join(__dirname,'targets.json')
+        let [cmd, args] = toCmdArgs(config.configEditor, [targets])
+        spawnDetached(cmd, args)
+    })
+
     socket.on('project-command', opts => {
         let {command, target, mode} = opts;
         
