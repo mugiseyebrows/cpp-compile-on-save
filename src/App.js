@@ -241,7 +241,7 @@ class App extends Component {
 
     var targetsFilter = <tr><td className="targetsFilter"><Input value={this.state.targetsFilter} handleChange={(e) => this.handleTargetsFilterChange(e)}/></td><td> </td><td> </td><td> </td></tr>
 
-    var f = this.state.targetsFilter
+    var re = new RegExp(this.state.targetsFilter,"i")
     
     var targetsBody = this.state.targets.map( (target,i) => {
     
@@ -253,12 +253,12 @@ class App extends Component {
       //console.log(target.name,f,target.name.indexOf(f) > -1)
 
       var rowClasses = classNames({
-        "hidden": target.name.indexOf(f) < 0, 
+        "hidden": !re.test(target.name),
         "compile-success": makeCode === 0, 
         "compile-error":makeCode !== 0 && makeCode !== null
       })
 
-      console.log(rowClasses)
+      //console.log(rowClasses)
 
       return (<tr key={i} className={rowClasses}>
             <td><a href="#" onClick={(e)=>{e.preventDefault(); this.handleProjectCommand('explore', target)}}> {target.name} </a></td>
@@ -289,40 +289,40 @@ class App extends Component {
             </table>)
   }
 
-  render() {
-
-    var stdout = this.renderStdout()
-    var stderr = this.renderStderr()
-    var errors = this.renderErrors()
-    
-    
-    let mode = this.state.mode.value
-    
-    let targets = this.renderTargets()
-
+  renderTasks = () => {
     var tasks = null
-
     if (this.state.tasks.length > 0) {
       var children = this.state.tasks.map( (task,i) => <li key={i}>{JSON.stringify(task).replace(/\\\\/g,'\\')}</li> );
       tasks = <ul className="tasks">{children}</ul>
     }
+    return tasks
+  }
 
+  renderBookmarks = () => {
     var bookmarks = [];
     for(let k in this.state.bookmarks) {
       bookmarks.push(<button key={k} onClick={() => this.handleBookmark(k)}>{k}</button>)
     }
+    return bookmarks;
+  }
 
+  scrollStdOutAndStdErr = () => {
     setTimeout(()=>{
-      /*this.refStdout.current.scrollTo(0,10000)
-      this.refStderr.current.scrollTo(0,10000)*/
-
       let es = [this.refStdout.current, this.refStderr.current]
       es.forEach( e => e.scrollTop = e.scrollHeight )
-
     },10)
+  }
 
-    var modeOptions = [{value:'debug',label:'debug'},{value:'release',label:'release'}]
-    
+  render() {
+
+    let stdout = this.renderStdout()
+    let stderr = this.renderStderr()
+    let errors = this.renderErrors()
+    let targets = this.renderTargets()
+    let tasks = this.renderTasks()
+    let bookmarks = this.renderBookmarks()
+    this.scrollStdOutAndStdErr()
+    let modeOptions = [{value:'debug',label:'debug'},{value:'release',label:'release'}]
     return (
       <div className="App">
         <FlexPaneContainer>
@@ -332,7 +332,7 @@ class App extends Component {
             <div className="compile-label"> mode </div>,
             <Select className="react-select__wrap" classNamePrefix="react-select" value={this.state.mode} onChange={this.handleModeChange} options={modeOptions} />,
             <div className="compile-label"> all </div>,
-            <button key="0" className="compile" onClick={() => this.handleMakeAll(mode)}>make</button>,
+            <button key="0" className="compile" onClick={() => this.handleMakeAll(this.state.mode.value)}>make</button>,
             <button key="1" className="compile" onClick={() => this.handleMakeAll('clean')}>clean</button>,
             ]} >
             {targets}
