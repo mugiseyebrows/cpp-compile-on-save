@@ -128,7 +128,7 @@ class TaskQueue {
                     t = +new Date() - t
                     this.emit('proc-exit',{code:code,time:t,cwd:cwd})
                     this.proc = null
-                    debug(`process terminated with code ${code} in ${t}ms`)
+                    debug(`process ${cmd} terminated with code ${code} in ${t}ms`)
 
                     if (code === 0) {
                         this.trafficLights.green()
@@ -146,12 +146,26 @@ class TaskQueue {
 
                 debug(`killing ${task.proc}`)
 
-                fkill(task.proc,{force:true}).then(()=>{
-                    this.add(null)
-                }).catch((e)=>{
-                    console.log('catched',e)
-                    this.add(null)
-                })
+                if (process.platform === 'win32') {
+
+                    let cmd = 'taskkill'
+                    let args = ['/f','/im',task.proc]
+                    let proc = spawn(cmd, args)
+                    proc.on('exit',(code)=>{
+                        this.add(null)
+                        debug(`taskkill exited with code ${code}`)
+                    });
+
+                } else {
+                    fkill(task.proc,{force:true,tree:false}).then(()=>{
+                        this.add(null)
+                    }).catch((e)=>{
+                        console.log('catched',e)
+                        this.add(null)
+                    })
+                }
+
+                
 
             }
 
