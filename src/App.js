@@ -31,7 +31,9 @@ class App extends Component {
       tasks: [],
       isActive: false,
       mode: {value:'',label:''},
-      targetsFilter: ''
+      targetsFilter: '',
+      made : {},
+      mtime: {}
     }
 
     this.refStdout = React.createRef()
@@ -99,16 +101,19 @@ class App extends Component {
 
     socket.on('targets',(targets) => {
       this.setState({targets:targets})
-      //console.log(targets)
     })
 
     socket.on('tasks',(tasks) => {
       this.setState({tasks:tasks})
     })
 
-
     socket.on('binary-changed',(p) => {
-      socket.emit('targets')
+      socket.emit('mtime')
+    })
+
+    socket.on('mtime',(mtime)=>{
+      this.setState({mtime:mtime})
+      this.updateMade()
     })
 
     socket.on('bookmarks',(bookmarks) => {
@@ -126,6 +131,7 @@ class App extends Component {
 
     socket.emit('targets')
 
+    socket.emit('mtime')
     socket.emit('bookmarks')
     
     //socket.emit('set-active',isActive)
@@ -137,6 +143,27 @@ class App extends Component {
     socket.emit('get-mode')
 
     this.socket = socket
+
+    setInterval(()=>{
+      this.updateMade()
+    },60000)
+  }
+
+  updateMade = () => {
+    var made = {}
+    var mtime = this.state.mtime
+    var modes = ['debug','release']
+
+    this.state.targets.forEach(target => {
+      made[target.name] = {debug:null,release:null}
+      modes.forEach(mode => {
+        if (mtime[target.name] && mtime[target.name][mode]) {
+          made[target.name][mode] = mtimeFromNow(mtime[target.name][mode])
+        }
+      })
+    })
+
+    this.setState({made:made})
   }
 
   handleActiveChange = (e) => {
@@ -245,7 +272,7 @@ class App extends Component {
     
     var targetsBody = this.state.targets.map( (target,i) => {
     
-      let makeTime_ = mtimeFromNow(target.Mtime[mode])
+      
 
       var makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
       var makeCode = target.makeCode[mode]
@@ -260,9 +287,14 @@ class App extends Component {
 
       //console.log(rowClasses)
 
+      let made
+      if (this.state.made[target.name] && this.state.made[target.name][mode]) {
+        made = this.state.made[target.name][mode]
+      }
+
       return (<tr key={i} className={rowClasses}>
             <td><a href="#" onClick={(e)=>{e.preventDefault(); this.handleProjectCommand('explore', target)}}> {target.name} </a></td>
-            <td>{makeTime_}</td>
+            <td>{made}</td>
             <td>
               <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, mode)}>make</button>
               <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, 'clean')}>clean</button>

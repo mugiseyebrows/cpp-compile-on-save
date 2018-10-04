@@ -11,7 +11,7 @@ const fs = require('fs')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {findRoots, findTarget, copyExampleMaybe, toCmdArgs, spawnDetached, guessPro, updateMtime, updateMakeStat, readJson} = require('./Utils')
+const {findRoots, findTarget, copyExampleMaybe, toCmdArgs, spawnDetached, guessPro, getMtime, updateMakeStat, readJson} = require('./Utils')
 
 var port = 4000;
 server.listen(port, () => {
@@ -87,9 +87,13 @@ io.on('connection', (socket) => {
     socket.on('targets',()=>{
         
         updateMakeStat(targets,makeStat)
-        updateMtime(targets)
 
         socket.emit('targets',targets)
+    })
+
+    socket.on('mtime',()=>{
+        var mtime = getMtime(targets)
+        socket.emit('mtime',mtime)
     })
 
     socket.on('bookmarks',() => {
@@ -160,7 +164,7 @@ io.on('connection', (socket) => {
     socket.on('project-command', opts => {
         let {command, target, mode} = opts;
         
-        debug('project-command', opts)
+        debug('project-command', opts.command, target, mode)
 
         let commands = {
             edit: () => {

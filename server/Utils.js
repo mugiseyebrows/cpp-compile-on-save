@@ -67,7 +67,6 @@ function spawnDetached(cmd,args,opts) {
     child.unref()
 }
 
-
 function guessPro(targets) {
     targets.forEach(target => {
         let pro = target.pro || path.join(target.cwd,target.name + '.pro')
@@ -81,19 +80,22 @@ function guessPro(targets) {
     })
 }
 
+function getMtime(targets) {
+    let modes = ['debug','release']
+    let mtime = {}
 
-function updateMtime(targets) {
-    var modes = ['debug','release']
     targets.forEach(target => {
-        target['Mtime'] = {}
-        modes.forEach( mode => {
+        mtime[target.name] = {
+            debug:null,
+            release:null
+        }
+        modes.forEach(mode => {
             if (fs.existsSync(target[mode])) {
-                target['Mtime'][mode] = fs.statSync(target[mode]).mtime
-            } else {
-                target['Mtime'][mode] = null
+                mtime[target.name][mode] = fs.statSync(target[mode]).mtime
             }
         })
     })
+    return mtime
 }
 
 function updateMakeStat(targets, makeStat) {
@@ -121,6 +123,6 @@ function readJson(name) {
 
 module.exports = {isPathContains:isPathContains, findRoots:findRoots, findTarget:findTarget, 
     copyExampleMaybe:copyExampleMaybe, toCmdArgs:toCmdArgs, spawnDetached:spawnDetached, 
-    guessPro:guessPro, updateMtime:updateMtime,updateMakeStat:updateMakeStat, readJson:readJson
+    guessPro:guessPro, updateMakeStat:updateMakeStat, readJson:readJson, getMtime:getMtime
 }
 
