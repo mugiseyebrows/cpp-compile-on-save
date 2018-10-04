@@ -146,30 +146,16 @@ class TaskQueue {
 
                 debug(`killing ${task.proc}`)
 
-                if (process.platform === 'win32') {
-
-                    let cmd = 'taskkill'
-                    let args = ['/f','/im',task.proc]
-                    let proc = spawn(cmd, args)
-                    proc.on('exit',(code)=>{
-                        this.add(null)
-                        debug(`taskkill exited with code ${code}`)
-                    });
-
-                } else {
-                    fkill(task.proc,{force:true,tree:false}).then(()=>{
-                        this.add(null)
-                    }).catch((e)=>{
-                        console.log('catched',e)
-                        this.add(null)
-                    })
-                }
-
+                fkill(task.proc,{force:true}).then(()=>{
+                    this.add(null)
+                }).catch((e)=>{
+                    console.log('catched',e)
+                    this.add(null)
+                })
                 
-
             }
 
-        },500);
+        },500)
     }
 }
 
