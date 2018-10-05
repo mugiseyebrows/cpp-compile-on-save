@@ -28,7 +28,7 @@ class App extends Component {
       stderr: [],
       errors: [],
       targets: [],
-      tasks: [],
+      tasks: null,
       isActive: false,
       mode: {value:'',label:''},
       targetsFilter: '',
@@ -203,6 +203,10 @@ class App extends Component {
     this.socket.emit('open-file',{cwd:cwd, path:path, lineNum:lineNum})
   }
 
+  handleAbort = () => {
+    this.socket.emit('abort',{})
+  }
+
   handleCancelQueuedTasks = () => {
     this.socket.emit('cancel-queued',{})
   }
@@ -322,12 +326,26 @@ class App extends Component {
   }
 
   renderTasks = () => {
-    var tasks = null
-    if (this.state.tasks.length > 0) {
-      var children = this.state.tasks.map( (task,i) => <li key={i}>{JSON.stringify(task).replace(/\\\\/g,'\\')}</li> );
-      tasks = <ul className="tasks">{children}</ul>
+    
+    if (this.state.tasks === null) {
+      return null
     }
-    return tasks
+
+    var queued = this.state.tasks.queued
+    var running = this.state.tasks.running
+
+    if (queued.length === 0 && running === null) {
+      return null
+    }
+
+    var queued_ = queued.map( (task,i) => <li key={i+1}>{JSON.stringify(task).replace(/\\\\/g,'\\')}</li> );
+
+    var running_ = null
+    if (running !== null) {
+      running_ = <li key={0} className="task-running">{JSON.stringify(running).replace(/\\\\/g,'\\')}</li>
+    }
+
+    return <ul className="tasks">{running_}{queued_}</ul>
   }
 
   renderBookmarks = () => {
@@ -335,7 +353,10 @@ class App extends Component {
     for(let k in this.state.bookmarks) {
       bookmarks.push(<button key={k} onClick={() => this.handleBookmark(k)}>{k}</button>)
     }
-    return bookmarks;
+    if (bookmarks.length === 0) {
+      return null;
+    }
+    return <ul className="bookmarks">{bookmarks}</ul>
   }
 
   scrollStdOutAndStdErr = () => {
@@ -368,11 +389,13 @@ class App extends Component {
             <button key="1" className="compile" onClick={() => this.handleMakeAll('clean')}>clean</button>,
             ]} >
             {targets}
-            <ul className="bookmarks">
-              {bookmarks}
-            </ul>
+            {bookmarks}
+
           </FlexPane>
-          <FlexPane title="tasks" buttonsAfter={[<button key="0" onClick={() => this.handleCancelQueuedTasks()}>cancel</button>]}>
+          <FlexPane title="tasks" buttonsAfter={[
+            <button key="1" onClick={() => this.handleAbort()}>abort</button>,
+            <button key="0" onClick={() => this.handleCancelQueuedTasks()}>cancel</button>
+            ]}>
             {tasks}
           </FlexPane>
           <FlexPane title="errors" buttonsAfter={[<button key="0" onClick={() => this.handleClean('errors')}>clean</button>]}>

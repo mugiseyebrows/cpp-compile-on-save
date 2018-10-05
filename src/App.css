@@ -137,3 +137,7 @@ ul.bookmarks li {
 .targets tr td input {
   max-width: 100px;
 }
+
+.task-running {
+  color: blue;
+}

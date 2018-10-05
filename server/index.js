@@ -85,9 +85,7 @@ io.on('connection', (socket) => {
     taskQueue.setSocket(socket)
 
     socket.on('targets',()=>{
-        
         updateMakeStat(targets,makeStat)
-
         socket.emit('targets',targets)
     })
 
@@ -152,6 +150,11 @@ io.on('connection', (socket) => {
     socket.on('cancel-queued', () => {
         debug('cancel-queued')
         taskQueue.clean()
+    })
+
+    socket.on('abort', () => {
+        debug('abort')
+        taskQueue.abort()
     })
 
     socket.on('edit-targets',()=>{

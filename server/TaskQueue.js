@@ -14,10 +14,15 @@ class TaskQueue {
         this.makeStat = makeStat
         this.trafficLights = trafficLights
         this.config = config
+        this.running = null
     }
 
     setSocket(socket) {
         this.socket = socket
+    }
+
+    emitTasks() {
+        this.emit('tasks',{queued: this.tasks, running:this.running})
     }
 
     emit(type,data) {
@@ -36,6 +41,12 @@ class TaskQueue {
 
     clean() {
         this.tasks = []
+        this.emitTasks()
+    }
+
+    abort() {
+        this.clean()
+        this.proc.kill()
     }
 
     add(newTask, front) {
@@ -54,7 +65,7 @@ class TaskQueue {
             }
         }
 
-        this.emit('tasks',this.tasks)
+        this.emitTasks()
 
         if (this.proc != null) {
             debug('process is running')
@@ -63,10 +74,8 @@ class TaskQueue {
 
         if (this.tasks.length == 0) {
             debug('task queue is empty')
-            this.emit('tasks',this.tasks)
             return
         }
-
 
         debug('lets wait 500ms and then compile')
         clearTimeout(this.handle)
@@ -78,9 +87,13 @@ class TaskQueue {
             }
             
             var task = this.tasks.shift();
+
+            this.running = task
             //this.emit('tasks',this.tasks)
             
             //debug(`compiling ${cwd}`)
+
+            this.emitTasks()
 
             if (task.cmd == 'make' || task.cmd == 'qmake') {
 
@@ -138,7 +151,7 @@ class TaskQueue {
                     if (task.cmd == 'make') {
                         this.makeStat.set(task.cwd, task.mode, code, t)
                     }
-                    
+                    this.running = null
                     this.add(null)
                 })
 
@@ -147,9 +160,11 @@ class TaskQueue {
                 debug(`killing ${task.proc}`)
 
                 fkill(task.proc,{force:true}).then(()=>{
+                    this.running = null
                     this.add(null)
                 }).catch((e)=>{
                     console.log('catched',e)
+                    this.running = null
                     this.add(null)
                 })
                 
