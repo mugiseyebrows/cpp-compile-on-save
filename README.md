@@ -16,7 +16,7 @@
         "debug": "debug binary path",
         "release": "release binary path",
         "cwd": "cwd for make",
-        "kill": "binaries that you want to kill when 'cannot open output' error happen"
+        "kill": "processes that you want to kill when 'cannot open output' error occur"
     }]
 ```
 
