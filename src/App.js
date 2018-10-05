@@ -40,6 +40,7 @@ class App extends Component {
     this.refStderr = React.createRef()
 
     const socket = io('http://localhost:4000')
+    this.socket = socket
 
     socket.on('proc-stdout',(obj) => {
       var stdout = this.state.stdout
@@ -95,7 +96,6 @@ class App extends Component {
     })
 
     socket.on('proc-exit',(cwd)=>{
-      //this.setState({cwd:null})
       socket.emit('targets')
     })
 
@@ -129,24 +129,20 @@ class App extends Component {
       this.setState({mode:mode_})
     })
 
-    socket.emit('targets')
+    var reqs = ['targets','mtime','bookmarks','is-active','get-mode']
 
-    socket.emit('mtime')
-    socket.emit('bookmarks')
-    
-    //socket.emit('set-active',isActive)
-
-    socket.emit('is-active')
-
-    //socket.emit('set-mode', this.state.mode.value)
-
-    socket.emit('get-mode')
-
-    this.socket = socket
+    reqs.forEach(req => this.emit(req))
 
     setInterval(()=>{
       this.updateMade()
     },60000)
+
+  }
+
+  emit = (name, data) => {
+    if (this.socket !== null) {
+      this.socket.emit(name,data)
+    }
   }
 
   updateMade = () => {
@@ -170,19 +166,22 @@ class App extends Component {
     var isActive = this.state.isActive
     isActive = !isActive
     this.setState({isActive:isActive})
-    this.socket.emit('set-active',isActive)
+    this.emit('set-active',isActive)
   }
 
   handleEditTargets = () => {
-    this.socket.emit('edit-targets')
+    this.emit('edit-targets')
   }
 
   handleMakeAll = (mode) => {
-    this.socket.emit('make-all',mode)
+    let re = new RegExp(this.state.targetsFilter,"i")
+    this.state.targets
+      .filter(target => re.test(target.name))
+      .forEach(target => this.handleProjectCommand('make', target, mode))
   }
   
   handleBookmark = (k) => {
-    this.socket.emit('open-bookmark',k)
+    this.emit('open-bookmark',k)
   }
 
   componentDidMount() {
@@ -191,24 +190,24 @@ class App extends Component {
 
   handleModeChange = (newValue) => {
     //this.setState({mode:newValue})
-    this.socket.emit('set-mode', newValue.value)
+    this.emit('set-mode', newValue.value)
   }
 
   handleProjectCommand = (command, target, mode) => {
-    this.socket.emit('project-command',{command:command,target:target, mode: mode})
+    this.emit('project-command',{command:command,target:target, mode: mode})
   }
 
   handleOpenFile = (cwd, path, lineNum) => {
     //console.log('handleOpenFile', cwd, path, lineNum)
-    this.socket.emit('open-file',{cwd:cwd, path:path, lineNum:lineNum})
+    this.emit('open-file',{cwd:cwd, path:path, lineNum:lineNum})
   }
 
   handleAbort = () => {
-    this.socket.emit('abort',{})
+    this.emit('abort',{})
   }
 
   handleCancelQueuedTasks = () => {
-    this.socket.emit('cancel-queued',{})
+    this.emit('cancel-queued',{})
   }
 
   handleClean = (subj) => {
@@ -276,8 +275,6 @@ class App extends Component {
     
     var targetsBody = this.state.targets.map( (target,i) => {
     
-      
-
       var makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
       var makeCode = target.makeCode[mode]
 
@@ -288,8 +285,6 @@ class App extends Component {
         "compile-success": makeCode === 0, 
         "compile-error":makeCode !== 0 && makeCode !== null
       })
-
-      //console.log(rowClasses)
 
       let made
       if (this.state.made[target.name] && this.state.made[target.name][mode]) {

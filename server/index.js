@@ -139,14 +139,6 @@ io.on('connection', (socket) => {
         socket.emit('get-mode', mode)
     })
 
-    socket.on('make-all', mode => {
-        debug('make-all', mode)
-        targets.forEach(target => {
-            var task = {cmd:'make', mode:mode, cwd:target.cwd, kill:target.kill}
-            taskQueue.add(task)
-        })
-    })
-
     socket.on('cancel-queued', () => {
         debug('cancel-queued')
         taskQueue.clean()
