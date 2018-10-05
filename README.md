@@ -4,11 +4,15 @@
 
 ## Build
 
+`git clone git@github.com:mugiseyebrows/cpp-compile-on-save.git`
+
+`cd cpp-compile-on-save`
+
 `npm install`
 
 `npm run build`
 
-1) edit `server\targets.json`: specify all projects that you working on using following format
+1) Edit `server\targets.json`: specify all projects that you working on using following format:
 
 ```json
     [{
@@ -20,9 +24,8 @@
     }]
 ```
 
-2) edit `server\bookmarks.json`: specify all application you use frequently
-
-3) edit `server\config.json`: specify `serialPort` if you are going to use [serial-traffic-lights](https://github.com/mugiseyebrows/serial-traffic-lights) or remove if you are not
+2) Copy `server\bookmarks.json.example` to `server\bookmarks.json`. Specify there all application you use frequently.
+3) Copy `server\config.json.example` to `server\config.json`. Specify there your code `editor` and `make` command, optionaly specify `bash` and `gitk` path, also specify `serialPort` if you are going to use [serial-traffic-lights](https://github.com/mugiseyebrows/serial-traffic-lights) or remove `serialPort` from config if you are not. 
 
 ## Run
 
