@@ -3,7 +3,7 @@
 var debug = require('debug')('server')
 const fkill = require('fkill')
 const {spawn} = require('child_process')
-const {toCmdArgs} = require('./Utils')
+const {configCmdArgs} = require('./Utils')
 
 class TaskQueue {
     constructor(makeStat,trafficLights,config) {
@@ -101,17 +101,23 @@ class TaskQueue {
 
                 var t = +new Date()
                 
+                /*
                 let [cmd_, args_] = this.config.exec[task.cmd]
                 debug('cmd_, args_',task.cmd, cmd_, args_)
-
                 var repl = {
                     '$mode': task.mode,
-                    '$projectFile': target.pro,
                     '$cwd': cwd
+                }
+                if (target != null) {
+                    repl['$projectFile'] = target.pro
+                } else {
+                    debug('target is null')
                 }
 
                 let [cmd, args] = toCmdArgs(cmd_, args_, repl)
-                debug('cmd, args',task.cmd, cmd, args)
+                debug('cmd, args',task.cmd, cmd, args)*/
+
+                let {cmd,args} = configCmdArgs(this.config, task.cmd, target, task.mode, cwd)
                
                 this.proc = spawn(cmd, args, {cwd:cwd})
 
@@ -128,9 +134,11 @@ class TaskQueue {
                     //debug('stderr',cmd,cwd)
 
                     var lines = data.toString().split('\r\n')
-                    if (lines.filter(line => line.indexOf('cannot open output') > -1).length > 0 ) {
+
+                    var cannotOpen = lines.filter(line => line.indexOf('cannot open output') > -1 || line.indexOf('Permission denied') > -1)
+
+                    if (cannotOpen.length > 0 ) {
                         debug('cannot open output => need to kill some tasks')
-                        
                         if (task.kill != null && task.kill.length > 0) {
                             this.add({cmd:'make',cwd:task.cwd,mode:task.mode},true)
                             task.kill.forEach( kill => this.add({cmd:'kill',proc:kill},true))

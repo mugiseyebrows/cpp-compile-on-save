@@ -1,6 +1,8 @@
 {
     "serial-Port": "COM6",
-    
+    "editor": ["qtcreator.exe",["-client"]],
+    "configEditor": ["C:\\Program Files\\Microsoft VS Code\\Code.exe",["-r","-g"]],
+
     "exec": {
         "make": ["mingw32-make.exe",["-j4","$mode"]],
         "qmake": ["qmake.exe"],

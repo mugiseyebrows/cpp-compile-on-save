@@ -51,6 +51,21 @@ function copyExampleMaybe(name) {
     }
 }
 
+function configCmdArgs(config, command, target, mode, cwd) {
+    let [cmd_, args_] = config.exec[command]
+    var repl = {
+        '$mode': mode,
+        '$cwd': cwd
+    }
+    if (target != null) {
+        repl['$projectFile'] = target.pro
+    } else {
+        debug('target is null')
+    }
+    let [cmd, args] = toCmdArgs(cmd_, args_, repl)
+    return {cmd:cmd, args:args}
+} 
+
 function toCmdArgs(exp, args2, repl) {
     let cmd, args0
     if (Array.isArray(exp)) {
@@ -134,6 +149,6 @@ function readJson(name) {
 
 module.exports = {isPathContains:isPathContains, findRoots:findRoots, findTarget:findTarget, 
     copyExampleMaybe:copyExampleMaybe, toCmdArgs:toCmdArgs, spawnDetached:spawnDetached, 
-    guessPro:guessPro, updateMakeStat:updateMakeStat, readJson:readJson, getMtime:getMtime
+    guessPro:guessPro, updateMakeStat:updateMakeStat, readJson:readJson, getMtime:getMtime, configCmdArgs:configCmdArgs
 }
 

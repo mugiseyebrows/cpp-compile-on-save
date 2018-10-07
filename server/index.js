@@ -11,7 +11,7 @@ const fs = require('fs')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {findRoots, findTarget, copyExampleMaybe, toCmdArgs, spawnDetached, guessPro, getMtime, updateMakeStat, readJson} = require('./Utils')
+const {findRoots, findTarget, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, guessPro, getMtime, updateMakeStat, readJson} = require('./Utils')
 
 var port = 4000;
 server.listen(port, () => {
@@ -157,6 +157,10 @@ io.on('connection', (socket) => {
         spawnDetached(cmd, args)
     })
 
+    socket.on('commands',()=>{
+        socket.emit('commands',{commands:config.commands,extraCommands:config.extraCommands})
+    })
+
     socket.on('project-command', opts => {
         let {command, target, mode} = opts;
         
@@ -177,18 +181,26 @@ io.on('connection', (socket) => {
 
         if (command_.task === true) {
             var task = {cmd:command, mode:mode, cwd:target.cwd}
+            if (command == 'make') {
+                task['kill'] = target.kill
+            }
             taskQueue.add(task,false,target)
         } else {
             // not dry
+            /*
             var repl = {
                 '$mode': mode,
                 '$projectFile': target.pro,
                 '$cwd': target.cwd
             }
             let [cmd_, args_] = config.exec[command]
-            debug('cmd_, args_',command, cmd_, args_)
+            //debug('cmd_, args_',command, cmd_, args_)
             let [cmd, args] = toCmdArgs(cmd_, args_, repl)
-            debug('cmd, args',command, cmd, args)
+            //debug('cmd, args',command, cmd, args)
+            */
+
+            let {cmd, args} = configCmdArgs(config, command, target, mode, target.cwd)
+
             spawnDetached(cmd, args, {cwd:target.cwd})
         }
        

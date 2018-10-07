@@ -33,7 +33,9 @@ class App extends Component {
       mode: {value:'',label:''},
       targetsFilter: '',
       made : {},
-      mtime: {}
+      mtime: {},
+      commands: [],
+      extraCommands: []
     }
 
     this.refStdout = React.createRef()
@@ -68,6 +70,7 @@ class App extends Component {
       lines.filter( line => 
           line.indexOf('error:') > -1 || 
           line.indexOf('cannot open output') > -1 ||
+          line.indexOf('Permission denied') > -1 ||
           line.indexOf('multiple definition') > -1 || 
           line.indexOf('first defined here') > -1 ||
           line.indexOf('undefined reference') > -1 ||
@@ -129,7 +132,11 @@ class App extends Component {
       this.setState({mode:mode_})
     })
 
-    var reqs = ['targets','mtime','bookmarks','is-active','get-mode']
+    socket.on('commands',({commands,extraCommands}) => {
+      this.setState({commands:commands,extraCommands:extraCommands})
+    })
+
+    var reqs = ['targets','mtime','bookmarks','is-active','get-mode','commands']
 
     reqs.forEach(req => this.emit(req))
 
@@ -291,24 +298,24 @@ class App extends Component {
         made = this.state.made[target.name][mode]
       }
 
+      var commands = this.state.commands.map(command => {
+        return <button className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
+      })
+      var extraCommands = this.state.extraCommands.map(command => {
+        return <button className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
+      })
+        
       return (<tr key={i} className={rowClasses}>
             <td><a href="#" onClick={(e)=>{e.preventDefault(); this.handleProjectCommand('explore', target)}}> {target.name} </a></td>
             <td>{made}</td>
             <td>
-              <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, mode)}>make</button>
-              <button className="make-button" onClick={()=>this.handleProjectCommand('clean', target, mode)}>clean</button>
-
+              {commands}
               <div className="dropdown">
                 <div>&nbsp;...&nbsp;</div>
                 <div className="dropdown-content">
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('edit',target, mode)}>edit</button>
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('qmake',target, mode)}>qmake</button>
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('gitk',target, mode)}>gitk</button>
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('bash',target, mode)}>bash</button>
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('explore',target, mode)}>explore</button>
+                  {extraCommands}
                 </div>
               </div>
-
             </td>
             <td>{makeTime}</td>
             </tr>)
