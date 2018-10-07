@@ -49,7 +49,7 @@ class TaskQueue {
         this.proc.kill()
     }
 
-    add(newTask, front) {
+    add(newTask, front, target) {
 
         if (newTask != null) {
             if (!this.hasTask(newTask)) {
@@ -95,22 +95,28 @@ class TaskQueue {
 
             this.emitTasks()
 
-            if (task.cmd == 'make' || task.cmd == 'qmake') {
+            if (task.cmd != 'kill') {
 
                 var cwd = task.cwd
 
                 var t = +new Date()
-                this.emit('proc-start', {cwd:task.cwd, mode:task.mode, cmd:task.cmd})
                 
-                var cmd, args
-                if (task.cmd == 'make') {
-                    [cmd, args] = toCmdArgs(this.config.make, [task.mode])
-                } else {
-                    [cmd, args] = toCmdArgs(this.config.qmake)
+                let [cmd_, args_] = this.config.exec[task.cmd]
+                debug('cmd_, args_',task.cmd, cmd_, args_)
+
+                var repl = {
+                    '$mode': task.mode,
+                    '$projectFile': target.pro,
+                    '$cwd': cwd
                 }
 
-                debug(cmd, args)
+                let [cmd, args] = toCmdArgs(cmd_, args_, repl)
+                debug('cmd, args',task.cmd, cmd, args)
+               
                 this.proc = spawn(cmd, args, {cwd:cwd})
+
+                this.emit('proc-start', {cwd:task.cwd, mode:task.mode, cmd:task.cmd})
+
                 this.trafficLights.blue()
 
                 this.proc.stdout.on('data',(data)=>{

@@ -296,16 +296,16 @@ class App extends Component {
             <td>{made}</td>
             <td>
               <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, mode)}>make</button>
-              <button className="make-button" onClick={()=>this.handleProjectCommand('make', target, 'clean')}>clean</button>
+              <button className="make-button" onClick={()=>this.handleProjectCommand('clean', target, mode)}>clean</button>
 
               <div className="dropdown">
                 <div>&nbsp;...&nbsp;</div>
                 <div className="dropdown-content">
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('edit',target)}>edit</button>
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('qmake',target)}>qmake</button>
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('gitk',target)}>gitk</button>
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('bash',target)}>bash</button>
-                  <button className="make-button" onClick={()=>this.handleProjectCommand('explore',target)}>explore</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('edit',target, mode)}>edit</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('qmake',target, mode)}>qmake</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('gitk',target, mode)}>gitk</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('bash',target, mode)}>bash</button>
+                  <button className="make-button" onClick={()=>this.handleProjectCommand('explore',target, mode)}>explore</button>
                 </div>
               </div>
 

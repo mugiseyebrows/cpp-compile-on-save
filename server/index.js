@@ -72,7 +72,8 @@ roots.forEach(root => {
                     return
                 }
                 var target = findTarget(targets,absFileName)
-                taskQueue.add({cmd:'make',mode:mode,cwd:target.cwd,kill:target.kill})
+                var task = {cmd:'make',mode:mode,cwd:target.cwd,kill:target.kill}
+                taskQueue.add(task,false,target)
             }
         }
     })
@@ -161,6 +162,37 @@ io.on('connection', (socket) => {
         
         debug('project-command', opts.command, target, mode)
 
+        var command_ = [...config.commands,...config.extraCommands].filter(c=> c.name == command)
+
+        if (command_.length > 0) {
+            command_ = command_[0]
+        } else {
+            command_ = null
+        }
+
+        if (command_ == null) {
+            debug('unknown command',command)
+            return
+        }
+
+        if (command_.task === true) {
+            var task = {cmd:command, mode:mode, cwd:target.cwd}
+            taskQueue.add(task,false,target)
+        } else {
+            // not dry
+            var repl = {
+                '$mode': mode,
+                '$projectFile': target.pro,
+                '$cwd': target.cwd
+            }
+            let [cmd_, args_] = config.exec[command]
+            debug('cmd_, args_',command, cmd_, args_)
+            let [cmd, args] = toCmdArgs(cmd_, args_, repl)
+            debug('cmd, args',command, cmd, args)
+            spawnDetached(cmd, args, {cwd:target.cwd})
+        }
+       
+        /*
         let commands = {
             edit: () => {
                 let [cmd, args] = toCmdArgs(config.editor, [target.pro])
@@ -187,12 +219,14 @@ io.on('connection', (socket) => {
                 spawnDetached(cmd, args)
             }
         }
+        
 
         if (commands[command] == null) {
             console.log('unexpected project-command',command)
         } else {
             commands[command]();
         }
+        */
         
     })
 

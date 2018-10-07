@@ -51,11 +51,22 @@ function copyExampleMaybe(name) {
     }
 }
 
-function toCmdArgs(exp, args2) {
-    let cmd = exp[0]
-    let args0 = exp[1] || []
+function toCmdArgs(exp, args2, repl) {
+    let cmd, args0
+    if (Array.isArray(exp)) {
+        cmd = exp[0]
+        args0 = exp[1] || []
+    } else {
+        cmd = exp
+        args0 = []
+    }
     args2 = args2 || []
-    let args = [...args0,...args2]
+    let args = [...args0,...args2].map(a=>{
+        for(var k in repl) {
+            a = a.replace(k,repl[k])
+        }
+        return a
+    })
     return [cmd,args]
 }
 
