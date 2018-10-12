@@ -305,7 +305,7 @@ class App extends Component {
         return <button key={i} className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
       })
       var extraCommands = this.state.extraCommands.map((command,i) => {
-        return <button key={i} className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
+        return <li key={i}><button className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button></li>
       })
         
       return (<tr key={i} className={rowClasses}>
@@ -316,7 +316,9 @@ class App extends Component {
               <div className="dropdown">
                 <div>&nbsp;...&nbsp;</div>
                 <div className="dropdown-content">
-                  {extraCommands}
+                  <ul>
+                    {extraCommands}
+                  </ul>
                 </div>
               </div>
             </td>

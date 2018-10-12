@@ -79,7 +79,7 @@ ul.bookmarks {
   padding: 0 0 10px 0;
   list-style: none;
   position: relative;
-  top: 20px;
+  /*top: 20px;*/
   left: -28px; /* 50 button halfsize - 12 icon halfsize - 10 icon padding */
 }
 
@@ -107,19 +107,26 @@ ul.bookmarks li button {
   border-radius: 0px !important;
 }
 
-
 .dropdown {
-  position: relative;
+  position: absolute;
   display: inline-block;
 }
 
 .dropdown-content {
+  position: relative;
   display: none;
-  position: absolute;
-  min-width: 150px;
   z-index: 100;
-  text-align: left;
-  top: 0;
+  /*text-align: left;*/
+}
+
+.dropdown-content ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dropdown-content button {
+  width: 80px;
 }
 
 .dropdown:hover .dropdown-content {
