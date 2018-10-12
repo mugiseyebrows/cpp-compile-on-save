@@ -100,7 +100,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('open-bookmark', bookmark => {
-        let [cmd, args] = toCmdArgs(bookmarks[bookmark])
+        let {cmd, args} = configCmdArgs(bookmarks, bookmark.name, null, 'debug', __dirname)
         spawnDetached(cmd, args)
     })
 

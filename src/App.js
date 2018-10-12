@@ -8,6 +8,8 @@ import classNames from "classnames"
 import CheckBox from './CheckBox'
 import Select from 'react-select'
 
+import Star from './star.svg'
+
 import {mtimeFromNow, putLinks} from './Utils'
 
 class Input extends Component {
@@ -35,7 +37,8 @@ class App extends Component {
       made : {},
       mtime: {},
       commands: [],
-      extraCommands: []
+      extraCommands: [],
+      bookmarks: {commands:[],exec:{}}
     }
 
     this.refStdout = React.createRef()
@@ -298,11 +301,11 @@ class App extends Component {
         made = this.state.made[target.name][mode]
       }
 
-      var commands = this.state.commands.map(command => {
-        return <button className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
+      var commands = this.state.commands.map((command,i) => {
+        return <button key={i} className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
       })
-      var extraCommands = this.state.extraCommands.map(command => {
-        return <button className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
+      var extraCommands = this.state.extraCommands.map((command,i) => {
+        return <button key={i} className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
       })
         
       return (<tr key={i} className={rowClasses}>
@@ -351,13 +354,9 @@ class App extends Component {
   }
 
   renderBookmarks = () => {
-    var bookmarks = [];
-    for(let k in this.state.bookmarks) {
-      bookmarks.push(<button key={k} onClick={() => this.handleBookmark(k)}>{k}</button>)
-    }
-    if (bookmarks.length === 0) {
-      return null;
-    }
+    var bookmarks = this.state.bookmarks.commands.map((command,i) => {
+        return <li key={i}><button onClick={() => this.handleBookmark(command)}>{command.name}</button></li>
+    })
     return <ul className="bookmarks">{bookmarks}</ul>
   }
 
@@ -389,10 +388,10 @@ class App extends Component {
             <div className="compile-label"> all </div>,
             <button key="0" className="compile" onClick={() => this.handleMakeAll(this.state.mode.value)}>make</button>,
             <button key="1" className="compile" onClick={() => this.handleMakeAll('clean')}>clean</button>,
-            ]} >
-            {targets}
-            {bookmarks}
-
+            <div className="dropdown"><div><img className="bookmark-icon" src={Star}/></div><div className="dropdown-content">{bookmarks}</div></div>
+          ]}>
+          {targets}
+          
           </FlexPane>
           <FlexPane title="tasks" buttonsAfter={[
             <button key="1" onClick={() => this.handleAbort()}>abort</button>,

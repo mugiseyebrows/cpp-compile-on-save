@@ -77,10 +77,14 @@ ul.tasks {
 ul.bookmarks {
   margin: 0;
   padding: 0 0 10px 0;
+  list-style: none;
+  position: relative;
+  top: 20px;
+  left: -28px; /* 50 button halfsize - 12 icon halfsize - 10 icon padding */
 }
 
-ul.bookmarks li {
-  display: inline;
+ul.bookmarks li button {
+  width: 100px;
 }
 
 .flexpane-pane.flexpane-pane-normal.stdout, .flexpane-pane.flexpane-pane-normal.stderr {
@@ -140,4 +144,8 @@ ul.bookmarks li {
 
 .task-running {
   color: blue;
+}
+
+.bookmark-icon {
+  padding: 0 10px;
 }
