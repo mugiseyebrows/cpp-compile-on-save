@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 
-import './App.css'
 import './FlexPane.css'
 import {FlexPane, FlexPaneContainer} from './FlexPane'
 import io from 'socket.io-client'
@@ -11,6 +10,10 @@ import Select from 'react-select'
 import Star from './star.svg'
 
 import {mtimeFromNow, putLinks} from './Utils'
+
+import MugiMenu from 'react-mugimenu'
+
+import './App.css'
 
 class Input extends Component {
   constructor(props) {
@@ -301,26 +304,24 @@ class App extends Component {
         made = this.state.made[target.name][mode]
       }
 
-      var commands = this.state.commands.map((command,i) => {
+      /*var commands = this.state.commands.map((command,i) => {
         return <button key={i} className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
       })
       var extraCommands = this.state.extraCommands.map((command,i) => {
         return <li key={i}><button className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button></li>
+      })*/
+
+      var menuItems = this.state.commands.map(command=> command.name)
+      menuItems.push({
+        name: '...',
+        children: this.state.extraCommands.map(command=> command.name)
       })
-        
+
       return (<tr key={i} className={rowClasses}>
             <td><a href="#" onClick={(e)=>{e.preventDefault(); this.handleProjectCommand('explore', target)}}> {target.name} </a></td>
             <td>{made}</td>
-            <td>
-              {commands}
-              <div className="dropdown">
-                <div>&nbsp;...&nbsp;</div>
-                <div className="dropdown-content">
-                  <ul>
-                    {extraCommands}
-                  </ul>
-                </div>
-              </div>
+            <td class="target-menu">
+              <MugiMenu items={menuItems} onItemClick={(name)=>this.handleProjectCommand(name, target, mode)}/>
             </td>
             <td>{makeTime}</td>
             </tr>)
@@ -355,18 +356,32 @@ class App extends Component {
     return <ul className="tasks">{running_}{queued_}</ul>
   }
 
-  renderBookmarks = () => {
+  /*renderBookmarks = () => {
     var bookmarks = this.state.bookmarks.commands.map((command,i) => {
         return <li key={i}><button onClick={() => this.handleBookmark(command)}>{command.name}</button></li>
     })
     return <ul className="bookmarks">{bookmarks}</ul>
-  }
+  }*/
 
   scrollStdOutAndStdErr = () => {
     setTimeout(()=>{
       let es = [this.refStdout.current, this.refStderr.current]
       es.forEach( e => e.scrollTop = e.scrollHeight )
     },10)
+  }
+
+  handleMainMenu = (name) => {
+    if (name == 'make') {
+      this.handleMakeAll(this.state.mode.value)
+    } else if (name == 'clean') {
+      this.handleMakeAll('clean')
+    } else {
+      this.state.bookmarks.commands.forEach((command,i) => {
+        if (command.name === name) {
+          this.handleBookmark(command)
+        }
+      })
+    }
   }
 
   render() {
@@ -376,21 +391,22 @@ class App extends Component {
     let errors = this.renderErrors()
     let targets = this.renderTargets()
     let tasks = this.renderTasks()
-    let bookmarks = this.renderBookmarks()
+    //let bookmarks = this.renderBookmarks()
     this.scrollStdOutAndStdErr()
     let modeOptions = [{value:'debug',label:'debug'},{value:'release',label:'release'}]
+
+    let mainMenuItems = ['make','clean',{name:'bookmarks',icon:Star,children:this.state.bookmarks.commands.map(command=>command.name)}]
+
     return (
       <div className="App">
         <FlexPaneContainer>
           <FlexPane title="targets" buttonsAfter={[
-            <button onClick={()=>this.handleEditTargets()}>edit</button>,
+            <MugiMenu items={['edit']} onItemClick={(name) => this.handleEditTargets()} />,
             <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />,
-            <div className="compile-label"> mode </div>,
+            /*<div className="compile-label"> mode </div>,*/
             <Select className="react-select__wrap" classNamePrefix="react-select" value={this.state.mode} onChange={this.handleModeChange} options={modeOptions} />,
-            <div className="compile-label"> all </div>,
-            <button key="0" className="compile" onClick={() => this.handleMakeAll(this.state.mode.value)}>make</button>,
-            <button key="1" className="compile" onClick={() => this.handleMakeAll('clean')}>clean</button>,
-            <div className="dropdown"><div><img className="bookmark-icon" src={Star}/></div><div className="dropdown-content">{bookmarks}</div></div>
+            /*<div className="compile-label"> all </div>,*/
+            <MugiMenu items={mainMenuItems} onItemClick={(name) => this.handleMainMenu(name)} />,
           ]}>
           {targets}
           

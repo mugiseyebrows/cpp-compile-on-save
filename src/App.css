@@ -3,8 +3,8 @@ body {
   padding: 0;
   box-sizing: border-box;
   font-family: -apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-  font-size: small;
   color: #404040;
+  font-size: 14px;
 }
 
 .proc-title {
@@ -30,11 +30,8 @@ table.targets  {
   width: 100%;
 }
 
-.targets tr td {
-  padding: 0 10px;
-}
-
-.targets tr td {
+.targets td {
+  padding: 0 1rem 4px 1rem;
   text-align: center;
 }
 
@@ -53,38 +50,20 @@ ul.tasks {
   margin: 0;
 }
 
-.flexpane-buttons .checkbox {
-  
-  font-size: small;
-}
-
 .flexpane-buttons .checkbox input {
-  margin: 0 0 0 15px;
+  /*margin: 0 0 0 15px;*/
   position: relative;
   top: 2px;
-  left: -3px;
+  left: 0px;
 }
 
 .compile-label {
-  padding: 0 10px;
+  padding: 0.15rem 0.4rem;
 }
 
 .make-button {
   /*margin: -10px 0;*/
   vertical-align: middle;
-}
-
-ul.bookmarks {
-  margin: 0;
-  padding: 0 0 10px 0;
-  list-style: none;
-  position: relative;
-  /*top: 20px;*/
-  left: -28px; /* 50 button halfsize - 12 icon halfsize - 10 icon padding */
-}
-
-ul.bookmarks li button {
-  width: 100px;
 }
 
 .flexpane-pane.flexpane-pane-normal.stdout, .flexpane-pane.flexpane-pane-normal.stderr {
@@ -107,36 +86,6 @@ ul.bookmarks li button {
   border-radius: 0px !important;
 }
 
-.dropdown {
-  position: absolute;
-  display: inline-block;
-}
-
-.dropdown-content {
-  position: relative;
-  display: none;
-  z-index: 100;
-  /*text-align: left;*/
-}
-
-.dropdown-content ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.dropdown-content button {
-  width: 80px;
-}
-
-.dropdown:hover .dropdown-content {
-  display: block;
-}
-
-.dropdown .span {
-  padding: 0 5px;
-}
-
 .proc-data {
   padding: 0 0 10px 0;
 }
@@ -155,4 +104,28 @@ ul.bookmarks li button {
 
 .bookmark-icon {
   padding: 0 10px;
+}
+
+.mugi-menu li button {
+  font-size: 13px;
+}
+
+.mugi-menu .with-icon img {
+  width: 20px;
+  height: 20px;
+  top: 2px;
+  left: 3px;
+}
+
+.target-menu .dropdown {
+  margin-left: 20px;
+  margin-top: -25px;
+}
+
+.mugi-menu li ul {
+  left: auto;
+}
+
+.mugi-menu li {
+  position: static;
 }
