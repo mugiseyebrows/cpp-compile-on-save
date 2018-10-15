@@ -31,7 +31,7 @@ table.targets  {
 }
 
 .targets td {
-  padding: 0 1rem 4px 1rem;
+  /*padding: 0 1rem 4px 1rem;*/
   text-align: center;
 }
 
@@ -119,7 +119,7 @@ ul.tasks {
 
 .target-menu .dropdown {
   margin-left: 20px;
-  margin-top: -25px;
+  margin-top: -24.5px;
 }
 
 .mugi-menu li ul {
@@ -128,4 +128,8 @@ ul.tasks {
 
 .mugi-menu li {
   position: static;
+}
+
+.css-10nd86i.react-select__wrap {
+  margin: 0 0.5rem;
 }
