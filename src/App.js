@@ -215,13 +215,6 @@ class App extends Component {
     this.emit('open-file',{cwd:cwd, path:path, lineNum:lineNum})
   }
 
-  handleAbort = () => {
-    this.emit('abort',{})
-  }
-
-  handleCancelQueuedTasks = () => {
-    this.emit('cancel-queued',{})
-  }
 
   handleClean = (subj) => {
     var x = {
@@ -231,6 +224,14 @@ class App extends Component {
     }
     if (x[subj] != null) {
       x[subj]()
+    }
+  }
+
+  handleTaskMenuClick = (name) => {
+    if (['abort','cancel'].indexOf(name) > -1) {
+      this.emit(name)
+    } else {
+      console.log('handleAbortAndCancel error',name)
     }
   }
 
@@ -349,19 +350,12 @@ class App extends Component {
     var queued_ = queued.map( (task,i) => <li key={i+1}>{JSON.stringify(task).replace(/\\\\/g,'\\')}</li> );
 
     var running_ = null
-    if (running !== null) {
+    if (running != null) {
       running_ = <li key={0} className="task-running">{JSON.stringify(running).replace(/\\\\/g,'\\')}</li>
     }
 
     return <ul className="tasks">{running_}{queued_}</ul>
   }
-
-  /*renderBookmarks = () => {
-    var bookmarks = this.state.bookmarks.commands.map((command,i) => {
-        return <li key={i}><button onClick={() => this.handleBookmark(command)}>{command.name}</button></li>
-    })
-    return <ul className="bookmarks">{bookmarks}</ul>
-  }*/
 
   scrollStdOutAndStdErr = () => {
     setTimeout(()=>{
@@ -412,21 +406,22 @@ class App extends Component {
           
           </FlexPane>
           <FlexPane title="tasks" buttonsAfter={[
-            <button key="1" onClick={() => this.handleAbort()}>abort</button>,
-            <button key="0" onClick={() => this.handleCancelQueuedTasks()}>cancel</button>
+            <MugiMenu items={['abort','cancel']} onItemClick={(name) => this.handleTaskMenuClick(name)}/>
             ]}>
             {tasks}
           </FlexPane>
-          <FlexPane title="errors" buttonsAfter={[<button key="0" onClick={() => this.handleClean('errors')}>clean</button>]}>
+          <FlexPane title="errors" buttonsAfter={[
+            <MugiMenu items={['clean']} onItemClick={() => this.handleClean('errors')}/>
+          ]}>
             <div className="errors">{errors}</div>
           </FlexPane>
           <FlexPane title="stdout" refPane={this.refStdout} className="stdout" buttonsAfter={[
-            <button key="0" onClick={() => this.handleClean('stdout')}>clean</button>
+            <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stdout')}/>
           ]}>
             {stdout}
           </FlexPane>
           <FlexPane title="stderr" refPane={this.refStderr} className="stderr" buttonsAfter={[
-            <button key="0" onClick={() => this.handleClean('stderr')}>clean</button>
+            <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stderr')}/>
           ]}>
             {stderr}
           </FlexPane>

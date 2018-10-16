@@ -141,9 +141,9 @@ io.on('connection', (socket) => {
         socket.emit('get-mode', mode)
     })
 
-    socket.on('cancel-queued', () => {
-        debug('cancel-queued')
-        taskQueue.clean()
+    socket.on('cancel', () => {
+        debug('cancel')
+        taskQueue.cancel()
     })
 
     socket.on('abort', () => {
@@ -187,59 +187,10 @@ io.on('connection', (socket) => {
             }
             taskQueue.add(task,false,target)
         } else {
-            // not dry
-            /*
-            var repl = {
-                '$mode': mode,
-                '$projectFile': target.pro,
-                '$cwd': target.cwd
-            }
-            let [cmd_, args_] = config.exec[command]
-            //debug('cmd_, args_',command, cmd_, args_)
-            let [cmd, args] = toCmdArgs(cmd_, args_, repl)
-            //debug('cmd, args',command, cmd, args)
-            */
-
             let {cmd, args} = configCmdArgs(config, command, target, mode, target.cwd)
-
             spawnDetached(cmd, args, {cwd:target.cwd})
         }
        
-        /*
-        let commands = {
-            edit: () => {
-                let [cmd, args] = toCmdArgs(config.editor, [target.pro])
-                spawnDetached(cmd, args)
-            },
-            qmake: () => {
-                var task = {cmd:'qmake', mode:mode, cwd:target.cwd}
-                taskQueue.add(task)
-            },
-            gitk: () => {
-                let [cmd, args] = toCmdArgs(config.gitk)
-                spawnDetached(cmd, args, {cwd:target.cwd})
-            },
-            bash: () => {
-                let [cmd, args] = toCmdArgs(config.bash)
-                spawnDetached(cmd, args, {cwd:target.cwd})
-            },
-            make: () => {
-                var task = {cmd:'make', mode:mode, cwd:target.cwd}
-                taskQueue.add(task)
-            },
-            explore: () => {
-                let [cmd,args] = toCmdArgs(config.explorer, [target.cwd])
-                spawnDetached(cmd, args)
-            }
-        }
-        
-
-        if (commands[command] == null) {
-            console.log('unexpected project-command',command)
-        } else {
-            commands[command]();
-        }
-        */
         
     })
 

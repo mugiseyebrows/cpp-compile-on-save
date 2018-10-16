@@ -39,14 +39,16 @@ class TaskQueue {
         return this.tasks.filter( task => task.cwd == newTask.cwd && task.mode == newTask.mode && task.cmd == newTask.cmd ).length > 0
     }
 
-    clean() {
+    cancel() {
         this.tasks = []
         this.emitTasks()
     }
 
     abort() {
-        this.clean()
-        this.proc.kill()
+        this.cancel()
+        if (this.proc) {
+            this.proc.kill()
+        }
     }
 
     add(newTask, front, target) {
@@ -86,6 +88,11 @@ class TaskQueue {
                 return
             }
             
+            if (this.tasks.length == 0) {
+                debug('task queue is empty')
+                return
+            }
+
             var task = this.tasks.shift();
 
             this.running = task
