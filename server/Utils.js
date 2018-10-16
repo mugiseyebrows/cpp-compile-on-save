@@ -88,7 +88,7 @@ function toCmdArgs(exp, args2, repl) {
 function spawnDetached(cmd,args,opts) {
     args = args || []
     opts = Object.assign({},opts,{detached: true, stdio: 'ignore'})
-    debug('spawnDetached',opts)
+    //debug('spawnDetached',cmd,args,opts)
     let child = spawn(cmd,args,opts)
     child.unref()
 }
