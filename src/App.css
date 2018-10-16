@@ -134,3 +134,9 @@ ul.tasks {
 .css-10nd86i.react-select__wrap {
   margin: 0 0.5rem;
 }
+
+ul.flexpane-buttons .flexpane-title {
+  display: block;
+  width: 45px;
+  text-align: center;
+}
