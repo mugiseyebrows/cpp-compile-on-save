@@ -95,14 +95,71 @@ function spawnDetached(cmd,args,opts) {
 
 function guessPro(targets) {
     targets.forEach(target => {
-        let pro = target.pro || path.join(target.cwd,target.name + '.pro')
+        let pro = target.pro || path.join(target.cwd, target.name + '.pro')
         if (!fs.existsSync(pro)) {
             var pros = fs.readdirSync(target.cwd).filter( name => name.toLowerCase().endsWith('.pro') )
             if (pros.length > 0) {
-                pro = pros[0]
+                pro = path.join(target.cwd, pros[0])
             }
         }
         target.pro = pro
+    })
+}
+
+function readTargetFromPro(p) {
+    let pro = fs.readFileSync(p,'utf8').split('\n')
+    let names = pro.map(line => {
+        var m = line.match(/TARGET\s*=\s*([^\s]+)/)
+        if (m) {
+            m = m[1]
+        }
+        return m
+    }).filter(e=>e)
+    if (names.length > 0) {
+        return names[0]
+    }
+    return null
+}
+
+
+function findTargets(targets) {
+    guessPro(targets)
+    targets.forEach(target => {
+        if (target.type && ['qt-lib','qt-app'].indexOf(target.type)) {
+
+
+            if (process.platform === 'win32') {
+
+                let name;
+                if (target.name) {
+                    name = target.name
+                } else {
+                    var name_ = null
+                    if (target.pro && fs.existsSync(target.pro)) {
+                        name_ = readTargetFromPro(target.pro)
+                    }
+                    name = name_ || path.basename(target.cwd)
+                    target.name = name
+                }
+                
+                let modes = ['debug','release']
+                modes.forEach(mode => {
+                    if (target[mode] == null) {
+                        target[mode] = path.join(target.cwd, mode, name + (target.type == 'qt-app' ? '.exe' : '.dll'))
+                    }
+                })
+                if (target.kill == null && target.type == 'qt-app') {
+                    target.kill = [name + '.exe']
+                }
+
+                //debug(target)
+
+            } else if (process.platform === 'linux') {
+                // todo
+
+            }
+
+        }
     })
 }
 
@@ -149,6 +206,7 @@ function readJson(name) {
 
 module.exports = {isPathContains:isPathContains, findRoots:findRoots, findTarget:findTarget, 
     copyExampleMaybe:copyExampleMaybe, toCmdArgs:toCmdArgs, spawnDetached:spawnDetached, 
-    guessPro:guessPro, updateMakeStat:updateMakeStat, readJson:readJson, getMtime:getMtime, configCmdArgs:configCmdArgs
+    guessPro:guessPro, updateMakeStat:updateMakeStat, readJson:readJson, getMtime:getMtime, configCmdArgs:configCmdArgs,
+    findTargets:findTargets
 }
 

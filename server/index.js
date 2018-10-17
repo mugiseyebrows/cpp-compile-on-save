@@ -11,7 +11,7 @@ const fs = require('fs')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {findRoots, findTarget, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, guessPro, getMtime, updateMakeStat, readJson} = require('./Utils')
+const {findRoots, findTarget, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, findTargets, getMtime, updateMakeStat, readJson} = require('./Utils')
 
 var port = 4000;
 server.listen(port, () => {
@@ -33,7 +33,8 @@ copyExampleMaybe('bookmarks.json')
 copyExampleMaybe('config.json')
 
 var targets = readJson('targets.json')
-guessPro(targets)
+findTargets(targets)
+
 
 var bookmarks = readJson('bookmarks.json')
 var config = readJson('config.json')
