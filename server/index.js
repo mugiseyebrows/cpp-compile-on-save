@@ -11,7 +11,8 @@ const fs = require('fs')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {findRoots, findTarget, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, findTargets, getMtime, updateMakeStat, readJson} = require('./Utils')
+const {findRoots, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, findTargets, getMtime, updateMakeStat, readJson} = require('./Utils')
+const QtCppWatcher = require('./QtCppWatcher')
 
 var port = 4000;
 server.listen(port, () => {
@@ -38,6 +39,9 @@ findTargets(targets)
 
 var bookmarks = readJson('bookmarks.json')
 var config = readJson('config.json')
+config.active = true
+config.mode = 'debug'
+debug('config',config)
 
 var trafficLights = new TrafficLights(config.serialPort)
 var makeStat = new MakeStat()
@@ -47,39 +51,13 @@ var taskQueue = new TaskQueue(makeStat, trafficLights, config)
 var roots = findRoots(targets)
 debug('roots',roots)
 
-var active = true
-var mode = 'debug'
-
-var sourceExts = new Set(['.ui','.cpp','.h','.pro'])
-var binaryExts = new Set(['.dll','.exe'])
+var watcher = new QtCppWatcher(config, targets, taskQueue)
 
 roots.forEach(root => {
     fs.watch(root,{recursive:true},(event,filename) => {
-        
-        if (filename === null) {
-            debug('filename is null',event)
-            return
-        }
-        if (event == "change" || event == "rename") {
-            var basename = path.basename(filename)
-            var ext = path.extname(basename)
-            var absFileName = path.join(root,filename)
-            if (basename.match(/moc_|ui_|qrc_/)) {
-                return;
-            } else if (binaryExts.has(ext)) {
-                taskQueue.emit('binary-changed',absFileName)
-            } else if (sourceExts.has(ext)) {
-                if (!active) {
-                    return
-                }
-                var target = findTarget(targets,absFileName)
-                var task = {cmd:'make',mode:mode,cwd:target.cwd,kill:target.kill}
-                taskQueue.add(task,false,target)
-            }
-        }
+        watcher.handle(root, event, filename)
     })
 })
-
 
 io.on('connection', (socket) => {
     debug('io connection')
@@ -123,23 +101,23 @@ io.on('connection', (socket) => {
 
     socket.on('set-active', value=>{
         debug('set-active',value)
-        active = value
+        config.active = value
     })
 
     socket.on('is-active',()=>{
-        debug('is-active',active)
-        socket.emit('is-active',active)
+        debug('is-active',config.active)
+        socket.emit('is-active',config.active)
     })
 
     socket.on('set-mode', newMode => {
         debug('set-mode', newMode)
-        mode = newMode
-        socket.emit('get-mode',mode)
+        config.mode = newMode
+        socket.emit('get-mode',config.mode)
     })
 
     socket.on('get-mode', () => {
-        debug('get-mode', mode)
-        socket.emit('get-mode', mode)
+        debug('get-mode', config.mode)
+        socket.emit('get-mode', config.mode)
     })
 
     socket.on('cancel', () => {
