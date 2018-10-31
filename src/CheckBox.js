@@ -7,12 +7,12 @@ export default class Checkbox extends Component {
     const { label, isChecked, onChange, id } = this.props;
 
     return (
-      <div className="checkbox">
-        <label ><input
+      
+        <label className={this.props.className} ><input
             type="checkbox"
             value={label}
             checked={isChecked}
-            onChange={onChange}/>{label}</label></div>
+            onChange={onChange}/>{label}</label>
     );
   }
 }

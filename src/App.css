@@ -94,10 +94,6 @@ ul.tasks {
   display: none;
 }
 
-.targets tr td input {
-  max-width: 100px;
-}
-
 .task-running {
   color: blue;
 }
@@ -139,4 +135,12 @@ ul.flexpane-buttons .flexpane-title {
   display: block;
   width: 45px;
   text-align: center;
+}
+
+.target-name {
+  float: left;
+}
+
+.target-show-hide {
+  float: left;
 }

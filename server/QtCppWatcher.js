@@ -25,7 +25,7 @@ class QtCppWatcher {
         let binaryExts = new Set(['.dll','.exe'])
         let {config, targets, taskQueue} = this
 
-        if (basename.match(/moc_|ui_|qrc_/)) {
+        if (basename.match(/moc_|ui_|qrc_|version[.]h/)) {
             return
         } else if (binaryExts.has(ext)) {
             taskQueue.emit('binary-changed',absFileName)
