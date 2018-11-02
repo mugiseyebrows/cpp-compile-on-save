@@ -43,7 +43,7 @@ class App extends Component {
       extraCommands: [],
       bookmarks: {commands:[],exec:{}},
       modeSelect: false,
-      targetsVisibility: []
+      targetsVisibility: {}
     }
 
     this.refStdout = React.createRef()
@@ -112,10 +112,10 @@ class App extends Component {
 
     socket.on('targets',(targets) => {
       if (this.state.targets.length == 0) {
-        var targetsVisibility = []
-        for(var i=0;i<targets.length;i++) {
-          targetsVisibility.push(true)
-        }
+        var targetsVisibility = {}
+        targets.forEach(target => {
+          targetsVisibility[target.name] = true
+        })
         this.setState({targetsVisibility:targetsVisibility})
       }
       this.setState({targets:targets})
@@ -202,9 +202,8 @@ class App extends Component {
   }
 
   handleMakeAll = (mode) => {
-    
     this.state.targets
-      .filter((target,i) => this.state.targetsVisibility[i])
+      .filter((target,i) => this.state.targetsVisibility[target.name])
       .forEach(target => this.handleProjectCommand('make', target, mode))
   }
   
@@ -293,20 +292,19 @@ class App extends Component {
   }
 
   handleAllNone = (name) => {
-    var targetsVisibility = this.state.targetsVisibility
-    if (name === 'all') {
-      targetsVisibility = targetsVisibility.map(e=>true)
-    } else if (name === 'none') {
-      targetsVisibility = targetsVisibility.map(e=>false)
+    let targetsVisibility = this.state.targetsVisibility
+    for(let k in targetsVisibility) {
+      targetsVisibility[k] = name === 'all' ? true : false
     }
     this.setState({targetsVisibility:targetsVisibility})
   }
 
+  /*
   handleShowHideTarget = (i) => {
     var targetsVisibility = this.state.targetsVisibility
     targetsVisibility[i] = !targetsVisibility[i]
     this.setState({targetsVisibility:targetsVisibility})
-  }
+  }*/
 
   handleModeSelect = (name) => {
     if (name == 'name') {
@@ -316,80 +314,70 @@ class App extends Component {
     }
   }
 
+  toggleVisibility = (target) => {
+    let targetsVisibility = this.state.targetsVisibility
+    targetsVisibility[target.name] = !targetsVisibility[target.name]
+    this.setState({targetsVisibility:targetsVisibility})
+  }
+
   handleExploreOrCheck = (target,i) => {
     if (this.state.modeSelect) {
-      this.handleShowHideTarget(i)
+      this.toggleVisibility(target)
     } else {
       this.handleProjectCommand('explore', target)
     }
   }
 
-  renderTargets = () => {
+  renderTarget = (target,i) => {
 
     let mode = this.state.mode.value
+    let modeSelect = this.state.modeSelect
 
-    var modeSelect = this.state.modeSelect
+    let makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
+    let makeCode = target.makeCode[mode]
 
-    var targetsHeader = <tr><th> <MugiMenu items={modeSelect ? ['name','all','none'] : ['name']} onItemClick={(name)=>{this.handleModeSelect(name)}}/> </th><th>made</th><th>make</th><th>make time</th></tr>
-
-    var targetsFilter = null // [<tr className={classNames({'hidden':!modeSelect})}><td><MugiMenu items={['all','none']} onItemClick={(name) => this.handleAllNone(name)}/> </td></tr>]
-
-    var targetsBody = this.state.targets.map( (target,i) => {
+    let isChecked = this.state.targetsVisibility[target.name]
     
-      var makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
-      var makeCode = target.makeCode[mode]
-
-      //console.log(target.name,f,target.name.indexOf(f) > -1)
-
-      var isChecked = this.state.targetsVisibility[i]
-      
-      var hidden = false
-      if (modeSelect) {
-        hidden = false
-      } else {
-        hidden = !isChecked
-      }
-
-      var rowClasses = classNames({
-        "hidden": hidden,
-        "compile-success": makeCode === 0, 
-        "compile-error":makeCode !== 0 && makeCode !== null
-      })
-
-      let made
-      if (this.state.made[target.name] && this.state.made[target.name][mode]) {
-        made = this.state.made[target.name][mode]
-      }
-
-      /*var commands = this.state.commands.map((command,i) => {
-        return <button key={i} className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button>
-      })
-      var extraCommands = this.state.extraCommands.map((command,i) => {
-        return <li key={i}><button className="make-button" onClick={()=>this.handleProjectCommand(command.name, target, mode)}>{command.name}</button></li>
-      })*/
-
-      var menuItems = this.state.commands.map(command=> command.name)
-      menuItems.push({
-        name: '...',
-        children: this.state.extraCommands.map(command=> command.name)
-      })
-
-      return (<tr key={i} className={rowClasses}>
-            <td>
-              <CheckBox className={classNames("target-show-hide",{"hidden":!modeSelect})} onChange={(e) => this.handleShowHideTarget(i)} isChecked={isChecked} />
-              <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
-            </td>
-            <td>{made}</td>
-            <td class="target-menu">
-              <MugiMenu items={menuItems} onItemClick={(name)=>this.handleProjectCommand(name, target, mode)}/>
-            </td>
-            <td>{makeTime}</td>
-            </tr>)
+    let hidden = modeSelect ? false : !isChecked
+    
+    var rowClasses = classNames({
+      "hidden": hidden,
+      "compile-success": makeCode === 0, 
+      "compile-error": makeCode !== 0 && makeCode !== null
     })
 
+    let made
+    if (this.state.made[target.name] && this.state.made[target.name][mode]) {
+      made = this.state.made[target.name][mode]
+    }
+
+    var menuItems = this.state.commands.map(command=> command.name)
+    menuItems.push({
+      name: '...',
+      children: this.state.extraCommands.map(command=> command.name)
+    })
+
+    return (<tr key={i} className={rowClasses}>
+          <td>
+            <CheckBox className={classNames("target-show-hide",{"hidden":!modeSelect})} onChange={(e) => this.toggleVisibility(target)} isChecked={isChecked} />
+            <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
+          </td>
+          <td>{made}</td>
+          <td class="target-menu">
+            <MugiMenu items={menuItems} onItemClick={(name)=>this.handleProjectCommand(name, target, mode)}/>
+          </td>
+          <td>{makeTime}</td>
+          </tr>)
+  }
+
+  renderTargets = () => {
+
+    var modeSelect = this.state.modeSelect
+    var targetsHeader = <tr><th> <MugiMenu items={modeSelect ? ['name','all','none'] : ['name']} onItemClick={(name)=>{this.handleModeSelect(name)}}/> </th><th>made</th><th>make</th><th>make time</th></tr>
+    var targetsBody = this.state.targets.map((target,i) => this.renderTarget(target,i))
     return (<table className="targets">
               <thead>{targetsHeader}</thead>
-              <tbody>{targetsFilter}{targetsBody}</tbody>
+              <tbody>{targetsBody}</tbody>
             </table>)
   }
 
