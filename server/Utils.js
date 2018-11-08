@@ -3,7 +3,7 @@
 const path = require('path')
 const fs = require('fs')
 const {spawn} = require('child_process')
-var debug = require('debug')('server')
+const debug = require('debug')('cpp-compile-on-save')
 const fse = require('fs-extra')
 
 function isPathContains(parent,child) {
@@ -181,24 +181,6 @@ function getMtime(targets) {
     return mtime
 }
 
-function updateMakeStat(targets, makeStat) {
-    var modes = ['debug','release']
-    targets.forEach(target => {
-        target['makeTime'] = {}
-        target['makeCode'] = {}
-        modes.forEach( mode => {
-            var stat = makeStat.get(target.cwd, mode)
-            if (stat !== null) {
-                target['makeTime'][mode] = stat.t
-                target['makeCode'][mode] = stat.code
-            } else {
-                target['makeTime'][mode] = null
-                target['makeCode'][mode] = null
-            }
-        }) 
-    })
-}
-
 function readJson(name) {
     return fse.readJsonSync(path.join(__dirname,name))
 }
@@ -206,7 +188,7 @@ function readJson(name) {
 
 module.exports = {isPathContains:isPathContains, findRoots:findRoots, findTarget:findTarget, 
     copyExampleMaybe:copyExampleMaybe, toCmdArgs:toCmdArgs, spawnDetached:spawnDetached, 
-    guessPro:guessPro, updateMakeStat:updateMakeStat, readJson:readJson, getMtime:getMtime, configCmdArgs:configCmdArgs,
+    guessPro:guessPro, readJson:readJson, getMtime:getMtime, configCmdArgs:configCmdArgs,
     findTargets:findTargets
 }
 

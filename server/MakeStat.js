@@ -1,29 +1,35 @@
+const debug = require('debug')('cpp-compile-on-save')
 
 class MakeStat {
 
     constructor() {
-        this.stat = []
+        this.stat = {}
     }
 
-    set(cwd,mode,code,t) {
-        var items = this.stat.filter( item => item.cwd == cwd && item.mode == mode )
-        if (items.length > 0) {
-            items[0].code = code;
-            items[0].t = t;
-        } else {
-            this.stat.push({cwd:cwd,mode:mode,code:code,t:t})
+    _get(name) {
+        if (this.stat[name] == null) {
+            this.stat[name] = {
+                debug: {code: null, t:null},
+                release: {code: null, t:null},
+            }
         }
+        return this.stat[name]
     }
 
-    get(cwd,mode) {
-        var items = this.stat.filter( item => item.cwd == cwd && item.mode == mode )
-        if (items.length > 0) {
-            return items[0]
+    set(name,mode,code,t) {
+        var item = this._get(name)
+        item[mode].code = code
+        if (t != null) {
+            item[mode].t = t
         }
-        return null;
+        debug(this.stat)
     }
 
-   
+    get(name) {
+        this._get(name)
+        return this.stat[name]
+    }
+
 }
 
 module.exports = MakeStat

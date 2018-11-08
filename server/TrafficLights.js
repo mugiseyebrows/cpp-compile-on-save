@@ -2,7 +2,7 @@
 
 
 var SerialPort = require('serialport')
-var debug = require('debug')('server')
+const debug = require('debug')('cpp-compile-on-save')
 
 class TrafficLights {
 

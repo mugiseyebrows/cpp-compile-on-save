@@ -5,13 +5,18 @@ var app = express()
 var server = require('http').createServer(app)
 var io = require('socket.io')(server)
 
-var debug = require('debug')('server')
+/* 
+set DEBUG=cpp-compile-on-save
+export DEBUG=cpp-compile-on-save
+*/
+
+const debug = require('debug')('cpp-compile-on-save')
 const fs = require('fs')
 
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {findRoots, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, findTargets, getMtime, updateMakeStat, readJson} = require('./Utils')
+const {findRoots, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, findTargets, getMtime, readJson} = require('./Utils')
 const QtCppWatcher = require('./QtCppWatcher')
 
 var port = 4000;
@@ -65,7 +70,6 @@ io.on('connection', (socket) => {
     taskQueue.setSocket(socket)
 
     socket.on('targets',()=>{
-        updateMakeStat(targets,makeStat)
         socket.emit('targets',targets)
     })
 
@@ -79,7 +83,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('open-bookmark', bookmark => {
-        let {cmd, args} = configCmdArgs(bookmarks, bookmark.name, null, 'debug', __dirname)
+        let {cmd, args} = configCmdArgs(bookmarks, bookmark.name, null, config.mode, __dirname)
         debug('open-bookmark',cmd,args)
         spawnDetached(cmd, args)
     })
@@ -160,7 +164,7 @@ io.on('connection', (socket) => {
         }
 
         if (command_.task === true) {
-            var task = {cmd:command, mode:mode, cwd:target.cwd}
+            var task = {cmd:command, mode:mode, cwd:target.cwd, name: target.name}
             if (command == 'make') {
                 task['kill'] = target.kill
             }

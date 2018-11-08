@@ -1,6 +1,6 @@
 
 const path = require('path')
-const debug = require('debug')('server')
+const debug = require('debug')('cpp-compile-on-save')
 const fs = require('fs')
 const {findTarget} = require('./Utils')
 
@@ -39,7 +39,7 @@ class QtCppWatcher {
                 return
             } 
             let target = findTarget(targets,absFileName)
-            let task = {cmd:'make',mode:config.mode,cwd:target.cwd,kill:target.kill}
+            let task = {cmd:'make',mode:config.mode,cwd:target.cwd,kill:target.kill,name:target.name}
             taskQueue.add(task,false,target)
         }
         

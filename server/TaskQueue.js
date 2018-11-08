@@ -1,6 +1,6 @@
 
 
-var debug = require('debug')('server')
+const debug = require('debug')('cpp-compile-on-save')
 const fkill = require('fkill')
 const {spawn} = require('child_process')
 const {configCmdArgs} = require('./Utils')
@@ -23,6 +23,10 @@ class TaskQueue {
 
     emitTasks() {
         this.emit('tasks',{queued: this.tasks, running:this.running})
+    }
+
+    emitMakeStat() {
+        this.emit('make-stat',this.makeStat.stat)
     }
 
     emit(type,data) {
@@ -108,22 +112,6 @@ class TaskQueue {
 
                 var t = +new Date()
                 
-                /*
-                let [cmd_, args_] = this.config.exec[task.cmd]
-                debug('cmd_, args_',task.cmd, cmd_, args_)
-                var repl = {
-                    '$mode': task.mode,
-                    '$cwd': cwd
-                }
-                if (target != null) {
-                    repl['$projectFile'] = target.pro
-                } else {
-                    debug('target is null')
-                }
-
-                let [cmd, args] = toCmdArgs(cmd_, args_, repl)
-                debug('cmd, args',task.cmd, cmd, args)*/
-
                 let {cmd,args} = configCmdArgs(this.config, task.cmd, target, task.mode, cwd)
                
                 this.proc = spawn(cmd, args, {cwd:cwd})
@@ -131,6 +119,15 @@ class TaskQueue {
                 this.emit('proc-start', {cwd:task.cwd, mode:task.mode, cmd:task.cmd})
 
                 this.trafficLights.blue()
+
+                if (task.name == null) {
+                    debug(`task.name == null 1`)
+                }
+
+                if (task.cmd == 'make') {
+                    this.makeStat.set(task.name, task.mode, null, null)
+                    this.emitMakeStat()
+                }
 
                 this.proc.stdout.on('data',(data)=>{
                     this.emit('proc-stdout',{data:data.toString(),cwd:cwd})
@@ -170,7 +167,13 @@ class TaskQueue {
                         this.trafficLights.red()
                     }
                     if (task.cmd == 'make') {
-                        this.makeStat.set(task.cwd, task.mode, code, t)
+
+                        if (task.name == null) {
+                            debug(`task.name == null 2`)
+                        }
+
+                        this.makeStat.set(task.name, task.mode, code, t)
+                        this.emitMakeStat()
                     }
                     this.running = null
                     this.add(null)

@@ -43,7 +43,8 @@ class App extends Component {
       extraCommands: [],
       bookmarks: {commands:[],exec:{}},
       modeSelect: false,
-      targetsVisibility: {}
+      targetsVisibility: {},
+      makeStat: {}
     }
 
     this.refStdout = React.createRef()
@@ -132,6 +133,10 @@ class App extends Component {
     socket.on('mtime',(mtime)=>{
       this.setState({mtime:mtime})
       this.updateMade()
+    })
+
+    socket.on('make-stat',(makeStat)=>{
+      this.setState({makeStat:makeStat})
     })
 
     socket.on('bookmarks',(bookmarks) => {
@@ -328,13 +333,27 @@ class App extends Component {
     }
   }
 
+
   renderTarget = (target,i) => {
 
     let mode = this.state.mode.value
     let modeSelect = this.state.modeSelect
 
-    let makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
-    let makeCode = target.makeCode[mode]
+    //let makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
+    //let makeCode = target.makeCode[mode]
+
+    let makeCode = null
+    let makeTime = null
+
+    if (this.state.makeStat && this.state.makeStat[target.name] && this.state.makeStat[target.name][mode]) {
+      makeCode = this.state.makeStat[target.name][mode].code
+      makeTime = this.state.makeStat[target.name][mode].t
+      if (makeTime != null) {
+        makeTime = makeTime / 1000
+      }
+    }
+
+    //console.log(this.state.makeStat)
 
     let isChecked = this.state.targetsVisibility[target.name]
     
@@ -351,10 +370,10 @@ class App extends Component {
       made = this.state.made[target.name][mode]
     }
 
-    var menuItems = this.state.commands.map(command=> command.name)
+    var menuItems = this.state.commands.map(command => command.name)
     menuItems.push({
       name: '...',
-      children: this.state.extraCommands.map(command=> command.name)
+      children: this.state.extraCommands.map(command => command.name)
     })
 
     return (<tr key={i} className={rowClasses}>
