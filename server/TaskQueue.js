@@ -144,7 +144,7 @@ class TaskQueue {
                     if (cannotOpen.length > 0 ) {
                         debug('cannot open output => need to kill some tasks')
                         if (task.kill != null && task.kill.length > 0) {
-                            this.add({cmd:'make',cwd:task.cwd,mode:task.mode},true)
+                            this.add({cmd:'make',cwd:task.cwd,mode:task.mode,name:task.name},true)
                             task.kill.forEach( kill => this.add({cmd:'kill',proc:kill},true))
                         } else {
                             debug('task.kill is null or empty',task,task.kill)
