@@ -18,11 +18,15 @@ class MakeStat {
 
     set(name,mode,code,t) {
         var item = this._get(name)
+        if (item[mode] == null) {
+            //debug('item[mode] == null',mode)
+            item[mode] =  {code: null, t:null}
+        }
         item[mode].code = code
         if (t != null) {
             item[mode].t = t
         }
-        debug(this.stat)
+        //debug(this.stat)
     }
 
     get(name) {

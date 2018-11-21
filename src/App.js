@@ -5,7 +5,7 @@ import {FlexPane, FlexPaneContainer} from './FlexPane'
 import io from 'socket.io-client'
 import classNames from "classnames"
 import CheckBox from './CheckBox'
-import Select from 'react-select'
+//import Select from 'react-select'
 
 import Star from './star.svg'
 
@@ -13,16 +13,9 @@ import {mtimeFromNow, putLinks} from './Utils'
 
 import MugiMenu from 'react-mugimenu'
 
-import './App.css'
+import Select from './Select'
 
-class Input extends Component {
-  constructor(props) {
-    super(props)
-  }
-  render() {
-    return <input type="text" value={this.props.value} onChange={(e) => this.props.handleChange(e)}/>
-  }
-}
+import './App.css'
 
 class App extends Component {
 
@@ -35,16 +28,15 @@ class App extends Component {
       targets: [],
       tasks: null,
       isActive: false,
-      mode: {value:'',label:''},
+      mode: 'debug',
 
       made : {},
       mtime: {},
-      commands: [],
-      extraCommands: [],
-      bookmarks: {commands:[],exec:{}},
+      commands: {shown:[],hidden:[]},
+      bookmarks: [],
       modeSelect: false,
       targetsVisibility: {},
-      makeStat: {}
+      makeStat: {},
     }
 
     this.refStdout = React.createRef()
@@ -148,15 +140,15 @@ class App extends Component {
     })
 
     socket.on('get-mode',(mode)=>{
-      var mode_ = {value:mode, label:mode}
-      this.setState({mode:mode_})
+      //console.log('get-mode',mode)
+      this.setState({mode:mode})
     })
 
-    socket.on('commands',({commands,extraCommands}) => {
-      this.setState({commands:commands,extraCommands:extraCommands})
+    socket.on('commands', commands => {
+      this.setState({commands:commands})
     })
 
-    var reqs = ['targets','mtime','bookmarks','is-active','get-mode','commands']
+    var reqs = ['targets','mtime','bookmarks','is-active','get-mode','commands','make-stat']
 
     reqs.forEach(req => this.emit(req))
 
@@ -208,17 +200,12 @@ class App extends Component {
 
   handleMakeAll = (mode) => {
     this.state.targets
-      .filter((target,i) => this.state.targetsVisibility[target.name])
+      .filter((target) => this.state.targetsVisibility[target.name])
       .forEach(target => this.handleProjectCommand('make', target, mode))
   }
   
   handleBookmark = (k) => {
     this.emit('open-bookmark',k)
-  }
-
-  handleModeChange = (newValue) => {
-    //this.setState({mode:newValue})
-    this.emit('set-mode', newValue.value)
   }
 
   handleProjectCommand = (command, target, mode) => {
@@ -304,13 +291,6 @@ class App extends Component {
     this.setState({targetsVisibility:targetsVisibility})
   }
 
-  /*
-  handleShowHideTarget = (i) => {
-    var targetsVisibility = this.state.targetsVisibility
-    targetsVisibility[i] = !targetsVisibility[i]
-    this.setState({targetsVisibility:targetsVisibility})
-  }*/
-
   handleModeSelect = (name) => {
     if (name == 'name') {
       this.toggleModeSelect()
@@ -336,11 +316,8 @@ class App extends Component {
 
   renderTarget = (target,i) => {
 
-    let mode = this.state.mode.value
+    let mode = this.state.mode
     let modeSelect = this.state.modeSelect
-
-    //let makeTime = target.makeTime[mode] != null ? `${target.makeTime[mode] / 1000}` : ''
-    //let makeCode = target.makeCode[mode]
 
     let makeCode = null
     let makeTime = null
@@ -352,8 +329,6 @@ class App extends Component {
         makeTime = makeTime / 1000
       }
     }
-
-    //console.log(this.state.makeStat)
 
     let isChecked = this.state.targetsVisibility[target.name]
     
@@ -370,15 +345,15 @@ class App extends Component {
       made = this.state.made[target.name][mode]
     }
 
-    var menuItems = this.state.commands.map(command => command.name)
+    var menuItems = this.state.commands.shown.map(command => command.name)
     menuItems.push({
       name: '...',
-      children: this.state.extraCommands.map(command => command.name)
+      children: this.state.commands.hidden.map(command => command.name)
     })
-
+    
     return (<tr key={i} className={rowClasses}>
           <td>
-            <CheckBox className={classNames("target-show-hide",{"hidden":!modeSelect})} onChange={(e) => this.toggleVisibility(target)} isChecked={isChecked} />
+            <CheckBox className={classNames("target-show-hide",{"hidden":!modeSelect})} onChange={() => this.toggleVisibility(target)} isChecked={isChecked} />
             <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
           </td>
           <td>{made}</td>
@@ -432,16 +407,22 @@ class App extends Component {
 
   handleMainMenu = (name) => {
     if (name == 'make') {
-      this.handleMakeAll(this.state.mode.value)
+      this.handleMakeAll(this.state.mode)
     } else if (name == 'clean') {
       this.handleMakeAll('clean')
     } else {
-      this.state.bookmarks.commands.forEach((command,i) => {
-        if (command.name === name) {
-          this.handleBookmark(command)
+      this.state.bookmarks.forEach((bookmark,i) => {
+        if (bookmark.name === name) {
+          this.handleBookmark(bookmark)
         }
       })
     }
+  }
+
+  handleModeChange = (e) => {
+    var value = e.target.value
+    this.emit('set-mode', value)
+    //this.setState({'mode':value})
   }
 
   render() {
@@ -455,7 +436,7 @@ class App extends Component {
     this.scrollStdOutAndStdErr()
     let modeOptions = [{value:'debug',label:'debug'},{value:'release',label:'release'}]
 
-    let mainMenuItems = ['make','clean',{name:'bookmarks',icon:Star,children:this.state.bookmarks.commands.map(command=>command.name)}]
+    let mainMenuItems = ['make','clean',{name:'bookmarks',icon:Star,children:this.state.bookmarks.map(bookmark=>bookmark.name)}]
 
     return (
       <div className="App">
@@ -464,12 +445,13 @@ class App extends Component {
             <MugiMenu items={['edit']} onItemClick={(name) => this.handleEditOrSelectTargets(name)} />,
             <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />,
             /*<div className="compile-label"> mode </div>,*/
-            <Select className="react-select__wrap" classNamePrefix="react-select" value={this.state.mode} onChange={this.handleModeChange} options={modeOptions} />,
+            <Select className="mode" options={modeOptions} onChange={this.handleModeChange} selected={this.state.mode} />,
+            /*<Select className="react-select__wrap" classNamePrefix="react-select" value={this.state.mode} onChange={this.handleModeChange} options={modeOptions} />,*/
             /*<div className="compile-label"> all </div>,*/
             <MugiMenu items={mainMenuItems} onItemClick={(name) => this.handleMainMenu(name)} />,
           ]}>
           {targets}
-          
+
           </FlexPane>
           <FlexPane title="tasks" buttonsAfter={[
             <MugiMenu items={['abort','cancel']} onItemClick={(name) => this.handleTaskMenuClick(name)}/>

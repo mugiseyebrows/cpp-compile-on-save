@@ -42,11 +42,15 @@ var targets = readJson('targets.json')
 findTargets(targets)
 
 
-var bookmarks = readJson('bookmarks.json')
+//var bookmarks = readJson('bookmarks.json')
 var config = readJson('config.json')
 config.active = true
-config.mode = 'debug'
-debug('config',config)
+
+if (config.mode == null) {
+    config.mode = 'debug'
+}
+
+//debug('config',config)
 
 var trafficLights = new TrafficLights(config.serialPort)
 var makeStat = new MakeStat()
@@ -54,7 +58,7 @@ var makeStat = new MakeStat()
 var taskQueue = new TaskQueue(makeStat, trafficLights, config)
 
 var roots = findRoots(targets)
-debug('roots',roots)
+//debug('roots',roots)
 
 var watcher = new QtCppWatcher(config, targets, taskQueue)
 
@@ -79,11 +83,11 @@ io.on('connection', (socket) => {
     })
 
     socket.on('bookmarks',() => {
-        socket.emit('bookmarks',bookmarks)
+        socket.emit('bookmarks',config.bookmarks)
     })
 
     socket.on('open-bookmark', bookmark => {
-        let {cmd, args} = configCmdArgs(bookmarks, bookmark.name, null, config.mode, __dirname)
+        let {cmd, args} = configCmdArgs(config, bookmark.name, null, config.mode, __dirname)
         debug('open-bookmark',cmd,args)
         spawnDetached(cmd, args)
     })
@@ -142,7 +146,12 @@ io.on('connection', (socket) => {
     })
 
     socket.on('commands',()=>{
-        socket.emit('commands',{commands:config.commands,extraCommands:config.extraCommands})
+        socket.emit('commands',config.commands)
+    })
+
+    socket.on('make-stat',()=>{
+        debug('make-stat')
+        socket.emit('make-stat',makeStat.stat)
     })
 
     socket.on('project-command', opts => {
@@ -150,17 +159,18 @@ io.on('connection', (socket) => {
         
         debug('project-command', opts.command, target, mode)
 
-        var command_ = [...config.commands,...config.extraCommands].filter(c=> c.name == command)
+        var command_ = [...config.commands.shown, ...config.commands.hidden].filter( c => c.name == command )
 
-        if (command_.length > 0) {
+        if (command_.length == 1) {
             command_ = command_[0]
+
         } else {
             command_ = null
-        }
-
-        if (command_ == null) {
-            debug('unknown command',command)
-            return
+            if (command_.length > 1) {
+                debug('ambigous command',command,command_)
+            } else {
+                debug('unknown command',command)
+            }
         }
 
         if (command_.task === true) {

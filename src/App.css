@@ -144,3 +144,7 @@ ul.flexpane-buttons .flexpane-title {
 .target-show-hide {
   float: left;
 }
+
+select.mode {
+  margin: 0 5px;
+}

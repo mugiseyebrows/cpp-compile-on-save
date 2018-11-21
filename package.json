@@ -13,7 +13,6 @@
     "react-dom": "^16.4.1",
     "react-mugimenu": "^1.0.0",
     "react-scripts": "1.1.4",
-    "react-select": "^2.1.0",
     "serialport": "^6.2.2",
     "socket.io": "^2.1.1"
   },
