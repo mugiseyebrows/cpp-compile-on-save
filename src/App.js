@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
+import {FlexPane, FlexPaneContainer} from 'react-flexpane'
+import 'react-flexpane/dist/styles.css'
 
-import './FlexPane.css'
-import {FlexPane, FlexPaneContainer} from './FlexPane'
 import io from 'socket.io-client'
 import classNames from "classnames"
 import CheckBox from './CheckBox'
