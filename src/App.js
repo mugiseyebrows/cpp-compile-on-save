@@ -26,7 +26,7 @@ class App extends Component {
       stderr: [],
       errors: [],
       targets: [],
-      tasks: null,
+      tasks: {queued:[], running:null},
       isActive: false,
       mode: 'debug',
 
@@ -42,8 +42,9 @@ class App extends Component {
     this.refStdout = React.createRef()
     this.refStderr = React.createRef()
 
-    const socket = io('http://localhost:4000')
-    this.socket = socket
+    this.socket = io('http://localhost:4000')
+
+    let socket = this.socket
 
     socket.on('proc-stdout',(obj) => {
       var stdout = this.state.stdout
@@ -159,9 +160,9 @@ class App extends Component {
   }
 
   emit = (name, data) => {
-    if (this.socket !== null) {
+    //if (this.socket !== undefined) {
       this.socket.emit(name,data)
-    }
+    //}
   }
 
   updateMade = () => {
@@ -321,7 +322,6 @@ class App extends Component {
 
     let makeCode = null
     let makeTime = null
-
     if (this.state.makeStat && this.state.makeStat[target.name] && this.state.makeStat[target.name][mode]) {
       makeCode = this.state.makeStat[target.name][mode].code
       makeTime = this.state.makeStat[target.name][mode].t
@@ -332,10 +332,10 @@ class App extends Component {
 
     let isChecked = this.state.targetsVisibility[target.name]
     
-    let hidden = modeSelect ? false : !isChecked
+    let hiddenRow = modeSelect ? false : !isChecked
     
     var rowClasses = classNames({
-      "hidden": hidden,
+      "hidden": hiddenRow,
       "compile-success": makeCode === 0, 
       "compile-error": makeCode !== 0 && makeCode !== null
     })
@@ -345,10 +345,12 @@ class App extends Component {
       made = this.state.made[target.name][mode]
     }
 
-    var menuItems = this.state.commands.shown.map(command => command.name)
+    var {hidden, shown} = this.state.commands
+
+    var menuItems = shown.map(command => command.name)
     menuItems.push({
       name: '...',
-      children: this.state.commands.hidden.map(command => command.name)
+      children: hidden.map(command => command.name)
     })
     
     return (<tr key={i} className={rowClasses}>
@@ -381,8 +383,7 @@ class App extends Component {
       return null
     }
 
-    var queued = this.state.tasks.queued
-    var running = this.state.tasks.running
+    var {queued, running} = this.state.tasks
 
     if (queued.length === 0 && running === null) {
       return null

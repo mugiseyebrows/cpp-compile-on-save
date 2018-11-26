@@ -1,18 +1,24 @@
 
 import React, { Component } from 'react'
 
+function isString(v) {
+  return typeof v === 'string'
+}
+
 export default class Select extends Component {
     render() {
   
       var selected = this.props.selected
       var selectedValue = null
   
-      if (selected == null) {
-        console.log("selected == null")
-      } else if (typeof selected === 'string') {
+      if (selected === undefined) {
+        console.log("selected === undefined")
+      } else if (isString(selected)) {
         selectedValue = selected
-      } else {
+      } else if (selected.value !== undefined) {
         selectedValue = selected.value
+      } else {
+        console.log(`unexpected selected prop ${selected}`)
       }
   
       var options = this.props.options.map( e => {
@@ -20,7 +26,7 @@ export default class Select extends Component {
           value: '',
         }
         var label = ''
-        if (typeof e == 'string') {
+        if (isString(e)) {
           props.value = e
           label = e
         } else {

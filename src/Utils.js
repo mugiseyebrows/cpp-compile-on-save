@@ -19,10 +19,6 @@ export function findPath(text) {
   
   export function putLinks(text, cwd, fn) {
   
-    if (text.split == null) {
-      console.log('putLinks error',text)
-    }
-  
     var items = text.split('\r\n').map((line,j) => {
       
       var res = []

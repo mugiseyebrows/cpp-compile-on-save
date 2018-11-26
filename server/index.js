@@ -46,7 +46,7 @@ findTargets(targets)
 var config = readJson('config.json')
 config.active = true
 
-if (config.mode == null) {
+if (config.mode === undefined) {
     config.mode = 'debug'
 }
 
@@ -99,7 +99,7 @@ io.on('connection', (socket) => {
         } else {
             pathArg = path.join(obj.cwd, obj.path)
         }
-        if (obj.lineNum !== null) {
+        if (obj.lineNum !== undefined && obj.lineNum !== null) {
             pathArg = pathArg + ':' + obj.lineNum
         }
         let [cmd, args] = toCmdArgs(config.editor, [pathArg])

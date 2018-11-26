@@ -144,11 +144,11 @@ function findTargets(targets) {
                 
                 let modes = ['debug','release']
                 modes.forEach(mode => {
-                    if (target[mode] == null) {
+                    if (target[mode] === undefined) {
                         target[mode] = path.join(target.cwd, mode, name + (target.type == 'qt-app' ? '.exe' : '.dll'))
                     }
                 })
-                if (target.kill == null && target.type == 'qt-app') {
+                if (target.kill === undefined && target.type == 'qt-app') {
                     target.kill = [name + '.exe']
                 }
 

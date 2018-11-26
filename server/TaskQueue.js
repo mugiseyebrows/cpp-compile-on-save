@@ -30,14 +30,14 @@ class TaskQueue {
     }
 
     emit(type,data) {
-        if (this.socket == null) {
+        if (this.socket === null) {
             return;
         }
         this.socket.emit(type,data)
     }
 
     hasTask(newTask) {
-        if (newTask.cwd == null) {
+        if (newTask.cwd === undefined) {
             return false;
         }
         return this.tasks.filter( task => task.cwd == newTask.cwd && task.mode == newTask.mode && task.cmd == newTask.cmd ).length > 0
@@ -120,8 +120,8 @@ class TaskQueue {
 
                 this.trafficLights.blue()
 
-                if (task.name == null) {
-                    debug(`task.name == null 1`)
+                if (task.name === undefined) {
+                    debug(`task.name === undefined 1`)
                 }
 
                 if (task.cmd == 'make') {
@@ -168,8 +168,8 @@ class TaskQueue {
                     }
                     if (task.cmd == 'make') {
 
-                        if (task.name == null) {
-                            debug(`task.name == null 2`)
+                        if (task.name === undefined) {
+                            debug(`task.name === undefined 2`)
                         }
 
                         this.makeStat.set(task.name, task.mode, code, t)

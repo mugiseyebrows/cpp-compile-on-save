@@ -7,7 +7,7 @@ class MakeStat {
     }
 
     _get(name) {
-        if (this.stat[name] == null) {
+        if (this.stat[name] === undefined) {
             this.stat[name] = {
                 debug: {code: null, t:null},
                 release: {code: null, t:null},
@@ -18,8 +18,8 @@ class MakeStat {
 
     set(name,mode,code,t) {
         var item = this._get(name)
-        if (item[mode] == null) {
-            //debug('item[mode] == null',mode)
+        if (item[mode] === undefined) {
+            //debug('item[mode] === undefined',mode)
             item[mode] =  {code: null, t:null}
         }
         item[mode].code = code
