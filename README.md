@@ -12,6 +12,8 @@
 
 `npm run build`
 
+## Configure
+
 1) Edit `server\targets.json`: specify all projects that you working on using following format (everything except name and cwd is optional):
 
 ```json
@@ -24,7 +26,7 @@
     }]
 ```
 
-2) Edit `config.json`: specify target commands, bookmarks.
+2) Edit `config.json`: specify target commands and bookmarks.
 
 ## Run
 
