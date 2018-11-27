@@ -35,7 +35,19 @@ if (fs.existsSync(build)) {
 }
 
 copyExampleMaybe('targets.json')
-copyExampleMaybe('bookmarks.json')
+
+var configSrc = path.join(__dirname,'config.' + process.platform + '.json')
+var configDst = path.join(__dirname,'config.json')
+
+if (!fs.existsSync(configDst)) {
+    if (fs.existsSync(configSrc)) {
+        debug(`copy ${configSrc} to ${configDst}`)
+        fs.copyFileSync(configSrc,configDst)
+    } else {
+        console.log(`example config file ${configSrc} does not exist`)
+    }
+}
+
 copyExampleMaybe('config.json')
 
 var targets = readJson('targets.json')

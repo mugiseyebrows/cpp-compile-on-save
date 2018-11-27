@@ -1,0 +1,43 @@
+{
+    "serialPort": "COM4",
+    "editor": ["qtcreator.exe", ["-client"]],
+    "configEditor": ["Code.exe", ["-r", "-g"]],
+    "commands": {
+        "shown": [{
+            "name": "make",
+            "task": true,
+            "cmd": ["mingw32-make.exe", ["-j4", "$mode"]]
+        }, {
+            "name": "clean",
+            "task": true,
+            "cmd": ["mingw32-make.exe", ["-j4", "clean"]]
+        }],
+        "hidden": [{
+            "name": "edit",
+            "cmd": ["qtcreator.exe", ["-client", "$projectFile"]]
+        }, {
+            "name": "qmake",
+            "task": true,
+            "cmd": ["qmake.exe"]
+        }, {
+            "name": "gitk",
+            "cmd": ["gitk", ["--all"]]
+        }, {
+            "name": "bash",
+            "cmd": ["git-bash.exe"]
+        }, {
+            "name": "explore",
+            "cmd": ["explorer.exe", ["$cwd"]]
+        }]
+    },
+    "bookmarks": [{
+        "name": "geany",
+        "cmd": ["geany.exe"]
+    }, {
+        "name": "vscode",
+        "cmd": ["Code.exe", ["-r", "-g"]]
+    }, {
+        "name": "qtcreator",
+        "cmd": ["qtcreator.exe"]
+    }]
+}

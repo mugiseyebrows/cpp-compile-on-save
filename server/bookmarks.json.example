@@ -1,8 +1,0 @@
-{
-    "exec" : {
-        "vscode" : ["C:\\Program Files\\Microsoft VS Code\\Code.exe"]
-    },
-    "commands": [
-        {"name":"vscode"}
-    ]
-}

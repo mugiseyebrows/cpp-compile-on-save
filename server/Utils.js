@@ -52,7 +52,7 @@ function copyExampleMaybe(name) {
 }
 
 function configCmdArgs(config, command, target, mode, cwd) {
-    let [cmd_, args_] = config.exec[command]
+    let [cmd_, args_] = [config.commands.shown, config.commands.hidden, config.bookmarks].map( e => e.find(c => c.name === command) ).find( e => e != null ).cmd
     var repl = {
         '$mode': mode,
         '$cwd': cwd
@@ -60,7 +60,7 @@ function configCmdArgs(config, command, target, mode, cwd) {
     if (target != null) {
         repl['$projectFile'] = target.pro
     } else {
-        debug('target is null')
+        
     }
     let [cmd, args] = toCmdArgs(cmd_, args_, repl)
     return {cmd:cmd, args:args}

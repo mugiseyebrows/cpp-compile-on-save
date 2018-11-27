@@ -87,7 +87,11 @@ ul.tasks {
 }
 
 .proc-data {
-  padding: 0 0 10px 0;
+  padding: 0 0 10px 0;  
+}
+
+ul.proc-data {
+  list-style: none;
 }
 
 .hidden {
