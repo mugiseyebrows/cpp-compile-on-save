@@ -42,7 +42,7 @@ first shell (frontend)
 
 second shell (backend)
 
-`set DEBUG=server`
+`export DEBUG=server`
 
 `nodemon --watch server server/index.js`
 
