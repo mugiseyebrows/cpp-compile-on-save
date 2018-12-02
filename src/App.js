@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import {FlexPane, FlexPaneContainer} from 'react-flexpane'
+import React, {Component} from 'react'
+import {FlexPane, FlexPaneContainer, FlexPaneBar, FlexPaneButtons, FlexPaneTitle} from 'react-flexpane'
 import 'react-flexpane/dist/styles.css'
 
 import io from 'socket.io-client'
@@ -258,6 +258,7 @@ class App extends Component {
     return stdout
   }
 
+
   renderStderr = () => {
     var stderr = []
     this.state.stderr.forEach((item,i) => { 
@@ -442,36 +443,47 @@ class App extends Component {
     return (
       <div className="App">
         <FlexPaneContainer>
-          <FlexPane title="targets" buttonsAfter={[
-            <MugiMenu items={['edit']} onItemClick={(name) => this.handleEditOrSelectTargets(name)} />,
-            <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />,
-            /*<div className="compile-label"> mode </div>,*/
-            <Select className="mode" options={modeOptions} onChange={this.handleModeChange} selected={this.state.mode} />,
-            /*<Select className="react-select__wrap" classNamePrefix="react-select" value={this.state.mode} onChange={this.handleModeChange} options={modeOptions} />,*/
-            /*<div className="compile-label"> all </div>,*/
-            <MugiMenu items={mainMenuItems} onItemClick={(name) => this.handleMainMenu(name)} />,
-          ]}>
-          {targets}
-
+          <FlexPane title="targets">
+            <FlexPaneBar>
+              <FlexPaneButtons/>
+              <FlexPaneTitle/>
+              <MugiMenu items={['edit']} onItemClick={(name) => this.handleEditOrSelectTargets(name)} />
+              <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
+              <Select className="mode" options={modeOptions} onChange={this.handleModeChange} selected={this.state.mode} />
+              <MugiMenu items={mainMenuItems} onItemClick={(name) => this.handleMainMenu(name)} />
+            </FlexPaneBar>
+            {targets}
           </FlexPane>
-          <FlexPane title="tasks" buttonsAfter={[
-            <MugiMenu items={['abort','cancel']} onItemClick={(name) => this.handleTaskMenuClick(name)}/>
-            ]}>
-            {tasks}
+          <FlexPane title="tasks">
+            <FlexPaneBar>
+              <FlexPaneButtons/>
+              <FlexPaneTitle/>
+              <MugiMenu items={['abort','cancel']} onItemClick={(name) => this.handleTaskMenuClick(name)}/>
+            </FlexPaneBar>
+            {tasks} 
           </FlexPane>
-          <FlexPane title="errors" buttonsAfter={[
-            <MugiMenu items={['clean']} onItemClick={() => this.handleClean('errors')}/>
-          ]}>
+          <FlexPane title="errors">
+            <FlexPaneBar>
+              <FlexPaneButtons/>
+              <FlexPaneTitle/>
+              <MugiMenu items={['clean']} onItemClick={() => this.handleClean('errors')}/>
+            </FlexPaneBar>
             <div className="errors">{errors}</div>
           </FlexPane>
-          <FlexPane title="stdout" refPane={this.refStdout} className="stdout" buttonsAfter={[
-            <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stdout')}/>
-          ]}>
+          <FlexPane title="stdout" refPane={this.refStdout} className="stdout">
+            <FlexPaneBar>
+              <FlexPaneButtons/>
+              <FlexPaneTitle/>
+              <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stdout')}/>
+            </FlexPaneBar>
             {stdout}
           </FlexPane>
-          <FlexPane title="stderr" refPane={this.refStderr} className="stderr" buttonsAfter={[
-            <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stderr')}/>
-          ]}>
+          <FlexPane title="stderr" refPane={this.refStderr} className="stderr">
+            <FlexPaneBar>
+              <FlexPaneButtons/>
+              <FlexPaneTitle/>
+              <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stderr')}/>
+            </FlexPaneBar>
             {stderr}
           </FlexPane>
         </FlexPaneContainer>
