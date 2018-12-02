@@ -19,8 +19,10 @@ export function findPath(text) {
   
   export function putLinks(text, cwd, fn) {
   
-    var items = text.split('\r\n').map((line,j) => {
+    var items = text.split('\n').map((line,j) => {
       
+      line = line.replace('\r','')
+
       var res = []
   
       let path = findPath(line) 

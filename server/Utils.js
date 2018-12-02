@@ -7,8 +7,9 @@ const debug = require('debug')('cpp-compile-on-save')
 const fse = require('fs-extra')
 
 function isPathContains(parent,child) {
-    let p = parent.split('\\')
-    let c = child.split('\\')
+    var path_sep = /[\\/]/g
+    let p = parent.split(path_sep)
+    let c = child.split(path_sep)
     if (c.length < p.length) {
         return false
     }
@@ -34,7 +35,8 @@ function findRoots(targets) {
 
 function findTarget(targets,p) {
     var targets_  = targets.slice()
-    targets_.sort( (a,b) => a.cwd.split('\\').length < b.cwd.split('\\').length ? 1 : -1 )
+    let path_sep = /[\\/]/g
+    targets_.sort( (a,b) => a.cwd.split(path_sep).length < b.cwd.split(path_sep).length ? 1 : -1 )
     for(var i=0;i<targets_.length;i++) {
         if (isPathContains(targets_[i].cwd,p)) {
             return targets_[i];

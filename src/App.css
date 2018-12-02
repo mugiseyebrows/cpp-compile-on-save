@@ -76,6 +76,12 @@ ul.tasks {
   list-style: none;
 }
 
+.stderr ul li, .stdout ul li {
+  font-size: 16px;
+  white-space: pre-wrap;
+  font-family: 'Courier New', Courier, monospace;
+}
+
 .react-select__input {
   width: 50px;
 }
@@ -129,10 +135,6 @@ ul.proc-data {
 
 .mugi-menu li {
   position: static;
-}
-
-.css-10nd86i.react-select__wrap {
-  margin: 0 0.5rem;
 }
 
 ul.flexpane-buttons .flexpane-title {

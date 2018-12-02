@@ -6,7 +6,7 @@
         "shown": [{
             "name": "make",
             "task": true,
-            "cmd": ["make", ["-j4", "$mode"]]
+            "cmd": ["make", ["-j4"]]
         }, {
             "name": "clean",
             "task": true,

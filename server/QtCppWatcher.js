@@ -10,14 +10,12 @@ class QtCppWatcher {
         this.targets = targets
         this.taskQueue = taskQueue
     }
-    handle(root, event, filename) {
+    handle(root, filename) {
         if (filename === null) {
             debug('filename is null',event)
             return
         }
-        if (event != "change" && event != "rename") {
-            return
-        }
+       
         let basename = path.basename(filename)
         let ext = path.extname(basename)
         let absFileName = path.join(root,filename)
@@ -39,6 +37,7 @@ class QtCppWatcher {
                 return
             } 
             let target = findTarget(targets,absFileName)
+            //debug(`filename ${filename} target ${target} absFileName ${absFileName}`)
             let task = {cmd:'make',mode:config.mode,cwd:target.cwd,kill:target.kill,name:target.name}
             taskQueue.add(task,false,target)
         }

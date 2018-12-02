@@ -1,9 +1,10 @@
 
 const express = require('express')
-var path = require('path')
-var app = express()
-var server = require('http').createServer(app)
-var io = require('socket.io')(server)
+const path = require('path')
+const app = express()
+const server = require('http').createServer(app)
+const io = require('socket.io')(server)
+const chokidar = require('chokidar')
 
 /* 
 set DEBUG=cpp-compile-on-save
@@ -75,9 +76,15 @@ var roots = findRoots(targets)
 var watcher = new QtCppWatcher(config, targets, taskQueue)
 
 roots.forEach(root => {
-    fs.watch(root,{recursive:true},(event,filename) => {
-        watcher.handle(root, event, filename)
-    })
+
+    var chokidarWatcher = chokidar.watch(root)
+
+    let handler = (filename) => watcher.handle(root, filename)
+
+    chokidarWatcher.on('add', handler )
+    chokidarWatcher.on('change', handler )
+    chokidarWatcher.on('unlink', handler )
+
 })
 
 io.on('connection', (socket) => {

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "chokidar": "^2.0.4",
     "classnames": "^2.2.6",
     "debug": "^3.1.0",
     "express": "^4.16.3",
