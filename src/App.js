@@ -46,7 +46,10 @@ class App extends Component {
 
     let socket = this.socket
 
-    socket.on('proc-stdout',(obj) => {
+    socket.on('stdout',(obj) => {
+
+      //return
+
       var stdout = this.state.stdout
 
       if (stdout.length === 0) {
@@ -57,7 +60,9 @@ class App extends Component {
       this.setState({stdout:stdout})
     })
 
-    socket.on('proc-stderr',(obj) => {
+    socket.on('stderr',(obj) => {
+      //return
+
       var stderr = this.state.stderr
       var errors = this.state.errors
 
@@ -213,9 +218,9 @@ class App extends Component {
     this.emit('project-command',{command:command,target:target, mode: mode})
   }
 
-  handleOpenFile = (cwd, path, lineNum) => {
+  handleOpenFile = (args) => {
     //console.log('handleOpenFile', cwd, path, lineNum)
-    this.emit('open-file',{cwd:cwd, path:path, lineNum:lineNum})
+    this.emit('open-file',args)
   }
 
 
@@ -428,6 +433,8 @@ class App extends Component {
   }
 
   render() {
+
+    //console.log('render',+new Date())
 
     let stdout = this.renderStdout()
     let stderr = this.renderStderr()

@@ -73,18 +73,21 @@ var taskQueue = new TaskQueue(makeStat, trafficLights, config)
 var roots = findRoots(targets)
 //debug('roots',roots)
 
-var watcher = new QtCppWatcher(config, targets, taskQueue)
+var watchHandler = new QtCppWatcher(config, targets, taskQueue)
 
 roots.forEach(root => {
-
-    var chokidarWatcher = chokidar.watch(root)
-
-    let handler = (filename) => watcher.handle(root, filename)
-
-    chokidarWatcher.on('add', handler )
-    chokidarWatcher.on('change', handler )
-    chokidarWatcher.on('unlink', handler )
-
+    if (process.platform === 'win32') {
+        fs.watch(root,{recursive:true},(event,filename) => {
+            if (filename !== null && (event === 'change' || event === 'rename' )) {
+                watchHandler.handle(root, filename)
+            }
+        })
+    } else {
+        var watcher = chokidar.watch(root,{ignoreInitial:true})
+        let handle = (filename) => watchHandler.handle(root, filename)
+        var events = ['add','change','unlink']
+        events.forEach(event => watcher.on(event, handle))
+    }
 })
 
 io.on('connection', (socket) => {
@@ -111,18 +114,25 @@ io.on('connection', (socket) => {
         spawnDetached(cmd, args)
     })
 
+
     socket.on('open-file', obj => {
-        let pathArg
-        if (path.isAbsolute(obj.path)) {
-            pathArg = obj.path
-        } else {
-            pathArg = path.join(obj.cwd, obj.path)
+
+        let {cwd,lineNum,colNum} = obj
+
+        let path_ = obj.path
+
+        if (!path.isAbsolute(path_)) {
+            path_ = path.join(obj.cwd, path_)
         }
-        if (obj.lineNum !== undefined && obj.lineNum !== null) {
-            pathArg = pathArg + ':' + obj.lineNum
+        if (obj.lineNum !== undefined) {
+            path_ = path_ + ':' + obj.lineNum
         }
-        let [cmd, args] = toCmdArgs(config.editor, [pathArg])
-        debug(cmd, args)
+        // qtcreator doesn't understand path:row:col format
+        /*if (obj.colNum !== null) {
+            path_ = path_ + ':' + obj.colNum
+        }*/
+        let [cmd, args] = toCmdArgs(config.editor, [path_])
+        debug(obj, cmd, args)
         spawnDetached(cmd, args)
     })
 

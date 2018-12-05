@@ -8,9 +8,13 @@ class TrafficLights {
 
     constructor(serialPort) {
         if (serialPort != null)  {
-            this.port = new SerialPort(serialPort)
+            this.port = new SerialPort(serialPort,(err) => {
+                if (err) {
+                    console.log(err)
+                    return
+                }
+            })
             debug(`${serialPort} open`)
-
         } else {
             this.port = {write:()=>{}}
         }

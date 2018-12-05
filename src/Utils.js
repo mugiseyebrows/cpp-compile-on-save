@@ -27,15 +27,16 @@ export function findPath(text) {
   
       let path = findPath(line) 
       while (path !== null) {
-        var parts = line.split(path,2)
+        let parts = line.split(path,2)
         res.push(parts[0])
-        var m = parts[1].match(/^[:]([0-9]+)/)
-        var lineNum = null
+        let m = parts[1].match(/^[:]([0-9]+)[:]([0-9]+)/) || parts[1].match(/^[:]([0-9]+)/)
+        let lineNum, colNum
         if (m) {
-          lineNum = m[1]
+          lineNum = +m[1]
+          colNum = +m[2]
         } 
         let path_ = path
-        res.push(<a key={res.length} href="#" onClick={(e) => {e.preventDefault(); fn(cwd, path_, lineNum)}}>{path}</a>)
+        res.push(<a key={res.length} href="#" onClick={(e) => {e.preventDefault(); fn({cwd,path:path_,lineNum,colNum})}}>{path}</a>)
         line = parts[1]
         path = findPath(line)
       }

@@ -23,7 +23,8 @@ function isPathContains(parent,child) {
 
 function findRoots(targets) {
     var targets_  = targets.slice()
-    targets_.sort( (a,b) => a.cwd.split('\\').length < b.cwd.split('\\').length ? -1 : 1 )
+    var path_sep = /[\\/]/g
+    targets_.sort( (a,b) => a.cwd.split(path_sep).length < b.cwd.split(path_sep).length ? -1 : 1 )
     var roots = []
     targets_.forEach(target => {
         if (roots.map( root => isPathContains(root, target.cwd) ).filter( e => e != false ).length == 0) {

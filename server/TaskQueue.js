@@ -5,6 +5,54 @@ const fkill = require('fkill')
 const {spawn} = require('child_process')
 const {configCmdArgs} = require('./Utils')
 
+class OutCacher {
+    constructor() {
+        
+        this.data = {
+            'stdout' : {},
+            'stderr' : {}
+        }
+
+        this.handle = setInterval(()=>{
+            this.flush()
+        },1000)
+    }
+
+    setSocket(socket) {
+        this.socket = socket
+    }
+
+    emit(tag,obj) {
+        if (this.socket === undefined) {
+            debug('OutCacher this.socket === undefined')
+            return
+        }
+        this.socket.emit(tag,obj)
+    }
+
+    flush() {
+        let chans = ['stdout','stderr']
+        chans.forEach(chan => {
+            for(let cwd in this.data[chan]) {
+                let data = this.data[chan][cwd]
+                if (data !== '' && data !== undefined) {
+                    //debug('socket.emit',cwd)
+                    this.emit(chan,{data,cwd})
+                    delete this.data[chan][cwd] 
+                }
+            }
+        })
+    }
+
+    send(chan,cwd,text) {
+        if (this.data[chan][cwd] === undefined) {
+            this.data[chan][cwd] = ''
+        }
+        this.data[chan][cwd] = this.data[chan][cwd] + text
+    }
+
+}
+
 class TaskQueue {
     constructor(makeStat,trafficLights,config) {
         this.proc = null
@@ -15,10 +63,12 @@ class TaskQueue {
         this.trafficLights = trafficLights
         this.config = config
         this.running = null
+        this.outCacher = new OutCacher()
     }
 
     setSocket(socket) {
         this.socket = socket
+        this.outCacher.setSocket(socket)
     }
 
     emitTasks() {
@@ -30,6 +80,7 @@ class TaskQueue {
     }
 
     emit(type,data) {
+        //debug('emit',type)
         if (this.socket === null) {
             return;
         }
@@ -130,8 +181,9 @@ class TaskQueue {
                 }
 
                 this.proc.stdout.on('data',(data)=>{
-                    this.emit('proc-stdout',{data:data.toString(),cwd:cwd})
+                    //this.emit('proc-stdout',{data:data.toString(),cwd:cwd})
                     //debug('stdout',cmd,cwd)
+                    this.outCacher.send('stdout',cwd,data.toString())
                 })
 
                 this.proc.stderr.on('data',(data)=>{
@@ -151,7 +203,10 @@ class TaskQueue {
                         }
                     }
 
-                    this.emit('proc-stderr',{data:data.toString(),cwd:cwd})
+                    //this.emit('proc-stderr',{data:data.toString(),cwd:cwd})
+
+                    this.outCacher.send('stderr',cwd,data.toString())
+
                     //debug('proc-stderr',data.toString())
                 })
 
