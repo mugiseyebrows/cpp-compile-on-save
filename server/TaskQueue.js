@@ -5,13 +5,16 @@ const fkill = require('fkill')
 const {spawn} = require('child_process')
 const {configCmdArgs} = require('./Utils')
 
-class OutCacher {
+class StdStreamCacher {
     constructor() {
         
-        this.data = {
-            'stdout' : {},
-            'stderr' : {}
-        }
+        this.chans = ['stdout','stderr']
+
+        this.data = {}
+
+        this.chans.forEach(chan => {
+            this.data[chan] = {}
+        })
 
         this.handle = setInterval(()=>{
             this.flush()
@@ -20,6 +23,18 @@ class OutCacher {
 
     setSocket(socket) {
         this.socket = socket
+    }
+
+    listen(proc, cwd) {
+        this.chans.forEach(chan => {
+            proc[chan].on('data', data => {
+                let text = data.toString()
+                if (this.data[chan][cwd] === undefined) {
+                    this.data[chan][cwd] = ''
+                }
+                this.data[chan][cwd] = this.data[chan][cwd] + text
+            })
+        })
     }
 
     emit(tag,obj) {
@@ -31,8 +46,7 @@ class OutCacher {
     }
 
     flush() {
-        let chans = ['stdout','stderr']
-        chans.forEach(chan => {
+        this.chans.forEach(chan => {
             for(let cwd in this.data[chan]) {
                 let data = this.data[chan][cwd]
                 if (data !== '' && data !== undefined) {
@@ -43,14 +57,20 @@ class OutCacher {
             }
         })
     }
+}
 
-    send(chan,cwd,text) {
-        if (this.data[chan][cwd] === undefined) {
-            this.data[chan][cwd] = ''
+function addKillTasksMaybe(taskQueue, stderrText, task) {
+    var lines = stderrText.split('\r\n')
+    var cannotOpen = lines.filter(line => line.indexOf('cannot open output') > -1 || line.indexOf('Permission denied') > -1)
+    if (cannotOpen.length > 0 ) {
+        debug('cannot open output => need to kill some tasks')
+        if (task.kill != null && task.kill.length > 0) {
+            taskQueue.add({cmd:'make',cwd:task.cwd,mode:task.mode,name:task.name},true)
+            task.kill.forEach( kill => taskQueue.add({cmd:'kill',proc:kill},true))
+        } else {
+            debug('task.kill is null or empty',task,task.kill)
         }
-        this.data[chan][cwd] = this.data[chan][cwd] + text
     }
-
 }
 
 class TaskQueue {
@@ -63,12 +83,12 @@ class TaskQueue {
         this.trafficLights = trafficLights
         this.config = config
         this.running = null
-        this.outCacher = new OutCacher()
+        this.stdStreamCacher = new StdStreamCacher()
     }
 
     setSocket(socket) {
         this.socket = socket
-        this.outCacher.setSocket(socket)
+        this.stdStreamCacher.setSocket(socket)
     }
 
     emitTasks() {
@@ -171,43 +191,19 @@ class TaskQueue {
 
                 this.trafficLights.blue()
 
+                this.stdStreamCacher.listen(this.proc, cwd)
+
                 if (task.name === undefined) {
                     debug(`task.name === undefined 1`)
                 }
 
-                if (task.cmd == 'make') {
+                if (task.cmd == 'make' && task.mode !== 'clean') {
                     this.makeStat.set(task.name, task.mode, null, null)
                     this.emitMakeStat()
                 }
 
-                this.proc.stdout.on('data',(data)=>{
-                    //this.emit('proc-stdout',{data:data.toString(),cwd:cwd})
-                    //debug('stdout',cmd,cwd)
-                    this.outCacher.send('stdout',cwd,data.toString())
-                })
-
                 this.proc.stderr.on('data',(data)=>{
-                    //debug('stderr',cmd,cwd)
-
-                    var lines = data.toString().split('\r\n')
-
-                    var cannotOpen = lines.filter(line => line.indexOf('cannot open output') > -1 || line.indexOf('Permission denied') > -1)
-
-                    if (cannotOpen.length > 0 ) {
-                        debug('cannot open output => need to kill some tasks')
-                        if (task.kill != null && task.kill.length > 0) {
-                            this.add({cmd:'make',cwd:task.cwd,mode:task.mode,name:task.name},true)
-                            task.kill.forEach( kill => this.add({cmd:'kill',proc:kill},true))
-                        } else {
-                            debug('task.kill is null or empty',task,task.kill)
-                        }
-                    }
-
-                    //this.emit('proc-stderr',{data:data.toString(),cwd:cwd})
-
-                    this.outCacher.send('stderr',cwd,data.toString())
-
-                    //debug('proc-stderr',data.toString())
+                    addKillTasksMaybe(this,data.toString(),task)
                 })
 
                 this.proc.on('exit',(code)=>{
@@ -215,18 +211,12 @@ class TaskQueue {
                     this.emit('proc-exit',{code:code,time:t,cwd:cwd})
                     this.proc = null
                     debug(`process ${cmd} terminated with code ${code} in ${t}ms`)
-
                     if (code === 0) {
                         this.trafficLights.green()
                     } else {
                         this.trafficLights.red()
                     }
                     if (task.cmd == 'make') {
-
-                        if (task.name === undefined) {
-                            debug(`task.name === undefined 2`)
-                        }
-
                         this.makeStat.set(task.name, task.mode, code, t)
                         this.emitMakeStat()
                     }
