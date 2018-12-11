@@ -21,9 +21,10 @@ export default class Select extends Component {
         console.log(`unexpected selected prop ${selected}`)
       }
   
-      var options = this.props.options.map( e => {
+      var options = this.props.options.map( (e,i) => {
         var props = {
           value: '',
+          key:i
         }
         var label = ''
         if (isString(e)) {
@@ -33,12 +34,9 @@ export default class Select extends Component {
           props.value = e.value
           label = e.label
         }
-        if (props.value === selectedValue) {
-          props['selected'] = 'on'
-        }
         return <option {...props}>{label}</option>
       })
-      return <select className={this.props.className} onChange={this.props.onChange}>{options}</select>
+      return <select className={this.props.className} value={selectedValue} onChange={this.props.onChange}>{options}</select>
     }
   }
   

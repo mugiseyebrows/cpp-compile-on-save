@@ -29,10 +29,7 @@ class StdStreamCacher {
         this.chans.forEach(chan => {
             proc[chan].on('data', data => {
                 let text = data.toString()
-                if (this.data[chan][cwd] === undefined) {
-                    this.data[chan][cwd] = ''
-                }
-                this.data[chan][cwd] = this.data[chan][cwd] + text
+                this.data[chan][cwd] = (this.data[chan][cwd] || '') + text
             })
         })
     }

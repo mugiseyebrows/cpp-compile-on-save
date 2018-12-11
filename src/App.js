@@ -110,7 +110,7 @@ class App extends Component {
     })
 
     socket.on('targets',(targets) => {
-      if (this.state.targets.length == 0) {
+      if (this.state.targets.length === 0) {
         var targetsVisibility = {}
         targets.forEach(target => {
           targetsVisibility[target.name] = true
@@ -199,7 +199,7 @@ class App extends Component {
   }
 
   handleEditOrSelectTargets = (name) => {
-    if (name == 'edit') {
+    if (name === 'edit') {
       this.emit('edit-targets')
     }
   }
@@ -299,7 +299,7 @@ class App extends Component {
   }
 
   handleModeSelect = (name) => {
-    if (name == 'name') {
+    if (name === 'name') {
       this.toggleModeSelect()
     } else {
       this.handleAllNone(name)
@@ -365,7 +365,7 @@ class App extends Component {
             <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
           </td>
           <td>{made}</td>
-          <td class="target-menu">
+          <td className="target-menu">
             <MugiMenu items={menuItems} onItemClick={(name)=>this.handleProjectCommand(name, target, mode)}/>
           </td>
           <td>{makeTime}</td>
@@ -413,9 +413,9 @@ class App extends Component {
   }
 
   handleMainMenu = (name) => {
-    if (name == 'make') {
+    if (name === 'make') {
       this.handleMakeAll(this.state.mode)
-    } else if (name == 'clean') {
+    } else if (name === 'clean') {
       this.handleMakeAll('clean')
     } else {
       this.state.bookmarks.forEach((bookmark,i) => {
@@ -451,12 +451,13 @@ class App extends Component {
       <div className="App">
         <FlexPaneContainer>
           <FlexPane title="targets">
-            <FlexPaneBar>
+            <FlexPaneBar className="main-bar">
               <FlexPaneButtons/>
               <FlexPaneTitle/>
               <MugiMenu items={['edit']} onItemClick={(name) => this.handleEditOrSelectTargets(name)} />
               <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
               <Select className="mode" options={modeOptions} onChange={this.handleModeChange} selected={this.state.mode} />
+              <div className="spacer"/>
               <MugiMenu items={mainMenuItems} onItemClick={(name) => this.handleMainMenu(name)} />
             </FlexPaneBar>
             {targets}

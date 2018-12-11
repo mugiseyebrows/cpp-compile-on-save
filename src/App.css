@@ -154,3 +154,24 @@ ul.flexpane-buttons .flexpane-title {
 select.mode {
   margin: 0 5px;
 }
+
+.main-bar {
+  justify-content: space-between;
+}
+
+.main-bar button.with-icon {
+  width: 80px;
+}
+
+.main-bar button.with-icon img {
+  position: relative;
+  top: 2px;
+}
+
+.spacer {
+  flex-grow: 1;
+}
+
+.main-bar .mugi-menu button.with-icon {
+  padding: 0 0.3rem !important;
+}

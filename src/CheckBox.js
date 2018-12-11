@@ -1,10 +1,10 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react'
+
 
 export default class Checkbox extends Component {
 
-
   render() {
-    const { label, isChecked, onChange, id } = this.props;
+    const { label, isChecked, onChange } = this.props;
 
     return (
       
