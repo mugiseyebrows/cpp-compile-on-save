@@ -12,14 +12,25 @@ import Star from './star.svg'
 
 import {mtimeFromNow, putLinks} from './Utils'
 
+import StdOutput from './StdOutput'
+import StdOutputs from './StdOutputs'
+
 import MugiMenu from 'react-mugimenu'
 
 import Select from './Select'
 
 import './App.css'
 
-class App extends Component {
+function append(a,vs) {
+  vs.forEach(v => a.push(v))
+}
 
+function lastItem(vs) {
+  return vs[vs.length-1]
+}
+
+
+class App extends Component {
   constructor() {
     super()
     this.state = {
@@ -47,35 +58,49 @@ class App extends Component {
 
     let socket = this.socket
 
-    socket.on('stdout',(obj) => {
 
-      //return
-
-      var stdout = this.state.stdout
-
-      if (stdout.length === 0) {
+    let onstd = (name,obj) => {
+      let out = this.state[name]
+      if (out.length === 0) {
+        console.log(`${name}.length === 0`)
         return
       }
+      if (obj.cwd === lastItem(out).cwd) {
+        putLinks(obj.data, obj.cwd).forEach(line => lastItem(out).lines.push(line))
+        lastItem(out).update++
+      } else {
+        console.log(obj.cwd, lastItem(out).cwd)
+      }
+      this.setState({[name]:out})
+    }
 
-      stdout[stdout.length-1].data = stdout[stdout.length-1].data + obj.data
-      this.setState({stdout:stdout})
+    socket.on('stdout',(obj) => {
+      /*var stdout = this.state.stdout
+      if (stdout.length === 0) {
+        console.log('stdout.length === 0')
+        return
+      }
+      if (obj.cwd === lastItem(stdout).cwd) {
+        putLinks(obj.data, obj.cwd).forEach(line => lastItem(stdout).lines.push(line))
+        lastItem(stdout).update++
+      } else {
+        console.log(obj.cwd, lastItem(stdout).cwd)
+      }
+      this.setState({stdout:stdout})*/
+      onstd('stdout',obj)
     })
 
     socket.on('stderr',(obj) => {
-      //return
+      onstd('stderr',obj)
+      let lines = obj.data.toString().split('\r\n')
+      let errors = this.state.errors
 
-      var stderr = this.state.stderr
-      var errors = this.state.errors
-
-      if (stderr.length === 0) {
+      if (errors.length === 0) {
+        console.log('errors.length === 0')
         return
       }
 
-      stderr[stderr.length-1].data = stderr[stderr.length-1].data + obj.data
-      
-      var lines = obj.data.toString().split('\r\n')
-
-      lines.filter( line => 
+      let errorLines = lines.filter( line => 
           line.indexOf('error:') > -1 || 
           line.indexOf('cannot open output') > -1 ||
           line.indexOf('Permission denied') > -1 ||
@@ -83,9 +108,15 @@ class App extends Component {
           line.indexOf('first defined here') > -1 ||
           line.indexOf('undefined reference') > -1 ||
           line.indexOf('No rule to make target') > -1
-      ).forEach( line => errors[errors.length-1].data.push(line) )
+      )
 
-      this.setState({stderr:stderr,errors:errors})
+      if (errorLines.length === 0) {
+        return
+      }
+
+      putLinks(errorLines.join('\n'), obj.cwd).forEach(line => lastItem(errors).lines.push(line))
+      lastItem(errors).update++
+      this.setState({errors:errors})
 
     })
 
@@ -99,9 +130,9 @@ class App extends Component {
       stderr = stderr.filter( item => !(item.cwd === cwd && item.mode === mode && item.cmd === cmd) ).slice(-5)
       errors = errors.filter( item => !(item.cwd === cwd && item.mode === mode && item.cmd === cmd) ).slice(-5)
 
-      stdout.push({cwd:cwd,mode:mode,cmd:cmd,data:''})
-      stderr.push({cwd:cwd,mode:mode,cmd:cmd,data:''})
-      errors.push({cwd:cwd,mode:mode,cmd:cmd,data:[]})
+      stdout.push({cwd:cwd,mode:mode,cmd:cmd,lines:[],update:0})
+      stderr.push({cwd:cwd,mode:mode,cmd:cmd,lines:[],update:0})
+      errors.push({cwd:cwd,mode:mode,cmd:cmd,lines:[],update:0})
 
       this.setState({stdout:stdout,stderr:stderr,errors:errors})
     })
@@ -251,9 +282,18 @@ class App extends Component {
   handleFilterExclude = (e) => {
     this.setState({targetsExclude:e.target.value})
   }
-
+/*
   renderStdout = () => {
-    var stdout = []
+
+    let result = this.state.stdout.map((item,j) => {
+      let {cmd, cwd, mode, lines, update} = item
+      let props = {cmd, cwd, mode, lines, update, onClick: (item)=>{}}
+      return <StdOutput {...props}/>
+    })
+    
+    return result*/
+
+    /*var stdout = []
     this.state.stdout.forEach((item,i) => { 
       stdout.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
       let items = []
@@ -261,11 +301,12 @@ class App extends Component {
       items = putLinks(item.data, item.cwd, this.handleOpenFile)
       stdout.push(<ul key={i*2+1} className="proc-data">{items}</ul>)
     })
-    return stdout
-  }
+    return stdout*/
+ /* }*/
 
 
   renderStderr = () => {
+    return null
     var stderr = []
     this.state.stderr.forEach((item,i) => { 
       stderr.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
@@ -277,6 +318,7 @@ class App extends Component {
     return stderr
   }
 
+  /*
   renderErrors = () => {
     var errors = []
     this.state.errors.forEach((item,i) => {
@@ -289,7 +331,7 @@ class App extends Component {
       }
     })
     return errors
-  }
+  }*/
 
   handleAllNone = (name) => {
     let targetsVisibility = this.state.targetsVisibility
@@ -445,9 +487,6 @@ class App extends Component {
 
     //console.log('render',+new Date())
 
-    let stdout = this.renderStdout()
-    let stderr = this.renderStderr()
-    let errors = this.renderErrors()
     let targets = this.renderTargets()
     let tasks = this.renderTasks()
     //let bookmarks = this.renderBookmarks()
@@ -479,13 +518,13 @@ class App extends Component {
             </FlexPaneBar>
             {tasks} 
           </FlexPane>
-          <FlexPane title="errors">
+          <FlexPane title="errors" className="errors">
             <FlexPaneBar>
               <FlexPaneButtons/>
               <FlexPaneTitle/>
               <MugiMenu items={['clean']} onItemClick={() => this.handleClean('errors')}/>
             </FlexPaneBar>
-            <div className="errors">{errors}</div>
+            <StdOutputs data={this.state.errors} onAnchor={this.handleOpenFile}/>
           </FlexPane>
           <FlexPane title="stdout" refPane={this.refStdout} className="stdout">
             <FlexPaneBar>
@@ -493,7 +532,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stdout')}/>
             </FlexPaneBar>
-            {stdout}
+            <StdOutputs data={this.state.stdout} onAnchor={this.handleOpenFile}/>
           </FlexPane>
           <FlexPane title="stderr" refPane={this.refStderr} className="stderr">
             <FlexPaneBar>
@@ -501,7 +540,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stderr')}/>
             </FlexPaneBar>
-            {stderr}
+            <StdOutputs data={this.state.stderr} onAnchor={this.handleOpenFile}/>
           </FlexPane>
         </FlexPaneContainer>
       </div>

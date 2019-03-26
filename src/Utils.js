@@ -17,33 +17,25 @@ export function findPath(text) {
     return moment(d,"YYYY-MM-DDTHH:mm:ss.SSSZ").fromNow()
   }
   
-  export function putLinks(text, cwd, fn) {
-  
-    var items = text.split('\n').map((line,j) => {
-      
+  export function putLinks(text, cwd) {
+    return text.split('\n').map((line,j) => {
+      let res = []
       line = line.replace('\r','')
-
-      var res = []
-  
       let path = findPath(line) 
       while (path !== null) {
         let parts = line.split(path,2)
-        res.push(parts[0])
+        res.push({t:'t',v:parts[0]})
         let m = parts[1].match(/^[:]([0-9]+)[:]([0-9]+)/) || parts[1].match(/^[:]([0-9]+)/)
         let lineNum, colNum
         if (m) {
           lineNum = +m[1]
           colNum = +m[2]
         } 
-        let path_ = path
-        res.push(<a key={res.length} href="#" onClick={(e) => {e.preventDefault(); fn({cwd,path:path_,lineNum,colNum})}}>{path}</a>)
+        res.push({t:'a',cwd,path,lineNum,colNum})
         line = parts[1]
         path = findPath(line)
       }
-      res.push(line)
-  
-      return <li key={j}>{res}</li>
+      res.push({t:'t',v:line})
+      return res
     })
-  
-    return items
   }
