@@ -124,11 +124,6 @@ ul.proc-data {
   left: 3px;
 }
 
-.target-menu .dropdown {
-  margin-left: 20px;
-  margin-top: -24.5px;
-}
-
 .mugi-menu li ul {
   left: auto;
 }
@@ -174,4 +169,25 @@ select.mode {
 
 .main-bar .mugi-menu button.with-icon {
   padding: 0 0.3rem !important;
+}
+
+.menu-target {
+  width: 100px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.menu {
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-item {
+  cursor: pointer;
+  height: 26px;
+}
+.menu-item:hover {
+  color: #5755d9;
 }

@@ -5,6 +5,7 @@ import 'react-flexpane/dist/styles.css'
 import io from 'socket.io-client'
 import classNames from "classnames"
 import CheckBox from './CheckBox'
+import Popup from "reactjs-popup";
 //import Select from 'react-select'
 
 import Star from './star.svg'
@@ -351,13 +352,8 @@ class App extends Component {
       made = this.state.made[target.name][mode]
     }
 
-    var {hidden, shown} = this.state.commands
-
-    var menuItems = shown.map(command => command.name)
-    menuItems.push({
-      name: '...',
-      children: hidden.map(command => command.name)
-    })
+    var menuShown = this.state.commands.shown.map((command,i) => <div key={i} className="menu-item" onClick={() => this.handleProjectCommand(command.name, target, mode)}> {command.name}</div>)
+    var menuHidden = this.state.commands.hidden.map((command,i) => <div key={i} className="menu-item" onClick={() => this.handleProjectCommand(command.name, target, mode)}> {command.name}</div>)
     
     return (<tr key={i} className={rowClasses}>
           <td>
@@ -365,8 +361,21 @@ class App extends Component {
             <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
           </td>
           <td>{made}</td>
-          <td className="target-menu">
-            <MugiMenu items={menuItems} onItemClick={(name)=>this.handleProjectCommand(name, target, mode)}/>
+          <td className="menu-target">
+            {menuShown}
+            <Popup
+              trigger={<div className="menu-item"> ... </div>}
+              position="right top"
+              on="hover"
+              closeOnDocumentClick
+              mouseLeaveDelay={0}
+              mouseEnterDelay={0}
+              contentStyle={{ padding: '0px', border: 'none', width: '80px', textAlign: 'center' }}
+              arrow={false}>
+              <div>
+                {menuHidden}
+              </div>
+            </Popup>
           </td>
           <td>{makeTime}</td>
           </tr>)
