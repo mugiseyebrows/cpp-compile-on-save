@@ -1,6 +1,7 @@
 import React, {Component} from 'react'
 import {FlexPane, FlexPaneContainer, FlexPaneBar, FlexPaneButtons, FlexPaneTitle} from 'react-flexpane'
 import 'react-flexpane/dist/styles.css'
+import './RandomBackground.css'
 
 import io from 'socket.io-client'
 import classNames from "classnames"
@@ -12,7 +13,6 @@ import Star from './star.svg'
 
 import {mtimeFromNow, putLinks} from './Utils'
 
-import StdOutput from './StdOutput'
 import StdOutputs from './StdOutputs'
 
 import MugiMenu from 'react-mugimenu'
@@ -20,10 +20,6 @@ import MugiMenu from 'react-mugimenu'
 import Select from './Select'
 
 import './App.css'
-
-function append(a,vs) {
-  vs.forEach(v => a.push(v))
-}
 
 function lastItem(vs) {
   return vs[vs.length-1]

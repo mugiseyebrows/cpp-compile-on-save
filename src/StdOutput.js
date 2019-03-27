@@ -1,6 +1,7 @@
 
 import React, {Component} from 'react'
-import classNames from "classnames"
+
+import randomBackground from './RandomBackground';
 
 export default class StdOutput extends Component {
 
@@ -22,8 +23,11 @@ export default class StdOutput extends Component {
           return <li key={i}>{items}</li>
       })
 
-      let c = 'c' + Math.floor(Math.random()*20);
+      
 
-      return <ul className={classNames("proc-data",{[c]:false})}><li className="proc-title">{props.cmd} {props.mode} @ {props.cwd}</li>{data}</ul>
+      let props_ = {className:"proc-data"}
+      //randomBackground(props_)
+
+      return <ul {...props_}><li className="proc-title">{props.cmd} {props.mode} @ {props.cwd}</li>{data}</ul>
     }
   }
