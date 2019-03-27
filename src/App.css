@@ -150,6 +150,7 @@ select.mode {
   margin: 0 5px;
 }
 
+/*
 .main-bar {
   justify-content: space-between;
 }
@@ -162,14 +163,17 @@ select.mode {
   position: relative;
   top: 2px;
 }
+*/
 
 .spacer {
   flex-grow: 1;
 }
 
+/*
 .main-bar .mugi-menu button.with-icon {
   padding: 0 0.3rem !important;
 }
+*/
 
 .menu-target {
   width: 100px;
@@ -186,10 +190,34 @@ select.mode {
 
 .menu-item {
   cursor: pointer;
-  height: 26px;
+  height: 20px;
 }
 .menu-item:hover {
   color: #5755d9;
+}
+
+.top-menu {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+
+.top-menu div {
+
+}
+
+.menu-spacer {
+  flex-grow: 1;
+  cursor: auto;
+}
+
+.top-menu .menu-item {
+  padding: 0 5px;
+}
+
+.top-menu .menu-item img {
+  width: 20px;
+  height: 20px;
 }
 
 .c0 {background: hsl(0,100%,60%);}

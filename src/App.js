@@ -29,6 +29,17 @@ function lastItem(vs) {
   return vs[vs.length-1]
 }
 
+let MenuItem = (props) => {
+  let children = React.Children.toArray(props.children)
+  let classNames_ = classNames("menu-item",props.className)
+
+  let onClick
+  if (props.onClick) {
+    onClick = (e) => {e.preventDefault(); props.onClick()}
+  }
+
+  return <div className={classNames_} onClick={onClick} >{props.text}{children}</div>
+}
 
 class App extends Component {
   constructor() {
@@ -495,18 +506,41 @@ class App extends Component {
 
     let mainMenuItems = ['make','clean',{name:'bookmarks',icon:Star,children:this.state.bookmarks.map(bookmark=>bookmark.name)}]
 
+/*
+<MugiMenu items={['edit']} onItemClick={(name) => this.handleEditOrSelectTargets(name)} />
+              <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
+              
+              <div className="spacer"/>
+              <MugiMenu items={mainMenuItems} onItemClick={(name) => this.handleMainMenu(name)} />
+
+*/
+
+    let bookmarks = this.state.bookmarks.map(bookmark => <MenuItem text={bookmark.name} onClick={()=>this.handleBookmark(bookmark)}/>)
+
     return (
       <div className="App">
         <FlexPaneContainer>
           <FlexPane title="targets">
-            <FlexPaneBar className="main-bar">
-              <FlexPaneButtons/>
-              <FlexPaneTitle/>
-              <MugiMenu items={['edit']} onItemClick={(name) => this.handleEditOrSelectTargets(name)} />
-              <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
-              <Select className="mode" options={modeOptions} onChange={this.handleModeChange} selected={this.state.mode} />
-              <div className="spacer"/>
-              <MugiMenu items={mainMenuItems} onItemClick={(name) => this.handleMainMenu(name)} />
+            <FlexPaneBar className="main-bar top-menu">
+              
+                <FlexPaneButtons/>
+                <FlexPaneTitle/>
+                <MenuItem text="edit" onClick={()=>this.emit('edit-targets')}/>
+                <MenuItem>
+                  <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
+                </MenuItem>
+                <MenuItem>
+                  <Select className="mode" options={modeOptions} onChange={this.handleModeChange} selected={this.state.mode} />
+                </MenuItem>
+                <MenuItem className="menu-spacer"/>
+                <MenuItem text="make" onClick={()=>{this.handleMakeAll(this.state.mode)}}/>
+                <MenuItem text="clean" onClick={()=>{this.handleMakeAll('clean')}}/>
+                <Popup trigger={<div className="menu-item"><img src={Star}/></div>} position="bottom right" on="hover" arrow={false} contentStyle={{width:'110px', textAlign: 'center'}} >
+                  <div>
+                    {bookmarks}
+                  </div>
+                </Popup>
+              
             </FlexPaneBar>
             {targets}
           </FlexPane>
