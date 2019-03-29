@@ -170,9 +170,11 @@ select.mode {
 .menu-item {
   cursor: pointer;
   height: 20px;
+  color: #5755d9;
 }
 .menu-item:hover {
-  color: #5755d9;
+  
+  background: #eee;
 }
 
 .top-menu {

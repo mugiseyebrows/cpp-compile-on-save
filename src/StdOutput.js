@@ -1,8 +1,6 @@
 
 import React, {Component} from 'react'
 
-import randomBackground from './RandomBackground';
-
 export default class StdOutput extends Component {
 
     shouldComponentUpdate(nextProps, nextState) {
@@ -19,15 +17,12 @@ export default class StdOutput extends Component {
             } else if (item.t === 'a') {
               return <a key={j} href="#" onClick={(e) => {e.preventDefault(); props.onAnchor(item)}}>{item.path}</a>
             }
+            console.log('item.t',item.t)
+            return null
           })
           return <li key={i}>{items}</li>
       })
 
-      
-
-      let props_ = {className:"proc-data"}
-      //randomBackground(props_)
-
-      return <ul {...props_}><li className="proc-title">{props.cmd} {props.mode} @ {props.cwd}</li>{data}</ul>
+      return <ul className="proc-data" key={props.key}><li key="-1" className="proc-title">{props.cmd} {props.mode} @ {props.cwd}</li>{data}</ul>
     }
   }

@@ -1,7 +1,6 @@
 import React, {Component} from 'react'
 import {FlexPane, FlexPaneContainer, FlexPaneBar, FlexPaneButtons, FlexPaneTitle} from 'react-flexpane'
 import 'react-flexpane/dist/styles.css'
-import './RandomBackground.css'
 
 import io from 'socket.io-client'
 import classNames from "classnames"
@@ -60,6 +59,7 @@ class App extends Component {
 
     this.refStdout = React.createRef()
     this.refStderr = React.createRef()
+    this.refErrors = React.createRef()
 
     this.socket = io('http://localhost:4000')
 
@@ -82,18 +82,7 @@ class App extends Component {
     }
 
     socket.on('stdout',(obj) => {
-      /*var stdout = this.state.stdout
-      if (stdout.length === 0) {
-        console.log('stdout.length === 0')
-        return
-      }
-      if (obj.cwd === lastItem(stdout).cwd) {
-        putLinks(obj.data, obj.cwd).forEach(line => lastItem(stdout).lines.push(line))
-        lastItem(stdout).update++
-      } else {
-        console.log(obj.cwd, lastItem(stdout).cwd)
-      }
-      this.setState({stdout:stdout})*/
+      
       onstd('stdout',obj)
     })
 
@@ -107,14 +96,18 @@ class App extends Component {
         return
       }
 
+      let msgs = [
+        'error:',
+        'cannot open output',
+        'Permission denied',
+        'multiple definition',
+        'first defined here',
+        'undefined reference',
+        'No rule to make target'
+      ]
+
       let errorLines = lines.filter( line => 
-          line.indexOf('error:') > -1 || 
-          line.indexOf('cannot open output') > -1 ||
-          line.indexOf('Permission denied') > -1 ||
-          line.indexOf('multiple definition') > -1 || 
-          line.indexOf('first defined here') > -1 ||
-          line.indexOf('undefined reference') > -1 ||
-          line.indexOf('No rule to make target') > -1
+          Math.max(...msgs.map(msg => line.indexOf(msg))) > -1
       )
 
       if (errorLines.length === 0) {
@@ -289,56 +282,6 @@ class App extends Component {
   handleFilterExclude = (e) => {
     this.setState({targetsExclude:e.target.value})
   }
-/*
-  renderStdout = () => {
-
-    let result = this.state.stdout.map((item,j) => {
-      let {cmd, cwd, mode, lines, update} = item
-      let props = {cmd, cwd, mode, lines, update, onClick: (item)=>{}}
-      return <StdOutput {...props}/>
-    })
-    
-    return result*/
-
-    /*var stdout = []
-    this.state.stdout.forEach((item,i) => { 
-      stdout.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
-      let items = []
-      //items = item.data.split('\r\n')
-      items = putLinks(item.data, item.cwd, this.handleOpenFile)
-      stdout.push(<ul key={i*2+1} className="proc-data">{items}</ul>)
-    })
-    return stdout*/
- /* }*/
-
-
-  renderStderr = () => {
-    return null
-    var stderr = []
-    this.state.stderr.forEach((item,i) => { 
-      stderr.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
-      let items = []
-      //items = item.data.split('\r\n')
-      items = putLinks(item.data, item.cwd, this.handleOpenFile)
-      stderr.push(<ul key={i*2+1}>{items}</ul>)
-    })
-    return stderr
-  }
-
-  /*
-  renderErrors = () => {
-    var errors = []
-    this.state.errors.forEach((item,i) => {
-      if (item.data.length > 0) {
-        
-        let children = putLinks(item.data.join('\r\n'), item.cwd, this.handleOpenFile)
-        
-        errors.push(<div key={i*2} className="proc-title">{item.cmd} {item.mode} @ {item.cwd}</div>)
-        errors.push(<ul key={i*2+1} className="proc-data" >{children}</ul>)
-      }
-    })
-    return errors
-  }*/
 
   handleAllNone = (name) => {
     let targetsVisibility = this.state.targetsVisibility
@@ -443,29 +386,23 @@ class App extends Component {
 
   renderTasks = () => {
     
-    if (this.state.tasks === null) {
-      return null
-    }
-
     var {queued, running} = this.state.tasks
 
     if (queued.length === 0 && running === null) {
       return null
     }
 
-    var queued_ = queued.map( (task,i) => <li key={i+1}>{JSON.stringify(task).replace(/\\\\/g,'\\')}</li> );
+    let renderTask = (task,i,running) => <li key={i} className={classNames({"task-running": running})} >{task.cmd} {task.mode} @ {task.cwd}</li>
 
-    var running_ = null
-    if (running != null) {
-      running_ = <li key={0} className="task-running">{JSON.stringify(running).replace(/\\\\/g,'\\')}</li>
-    }
-
-    return <ul className="tasks">{running_}{queued_}</ul>
+    return (<ul className="tasks">
+              {running ? renderTask(running,-1,true) : null}
+              {queued.map((task,i) => renderTask(task,i))}
+            </ul>)
   }
 
   scrollStdOutAndStdErr = () => {
     setTimeout(()=>{
-      let es = [this.refStdout.current, this.refStderr.current]
+      let es = [this.refStdout.current, this.refStderr.current, this.refErrors.current]
       es.forEach( e => e.scrollTop = e.scrollHeight )
     },10)
   }
@@ -498,26 +435,14 @@ class App extends Component {
     let tasks = this.renderTasks()
     //let bookmarks = this.renderBookmarks()
     this.scrollStdOutAndStdErr()
-    let modeOptions = [{value:'debug',label:'debug'},{value:'release',label:'release'}]
-
-    let mainMenuItems = ['make','clean',{name:'bookmarks',icon:Star,children:this.state.bookmarks.map(bookmark=>bookmark.name)}]
-
-/*
-<MugiMenu items={['edit']} onItemClick={(name) => this.handleEditOrSelectTargets(name)} />
-              <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
-              
-              <div className="spacer"/>
-              <MugiMenu items={mainMenuItems} onItemClick={(name) => this.handleMainMenu(name)} />
-
-*/
-
-    let bookmarks = this.state.bookmarks.map(bookmark => <MenuItem text={bookmark.name} onClick={()=>this.handleBookmark(bookmark)}/>)
+   
+    let bookmarks = this.state.bookmarks.map((bookmark,i) => <MenuItem key={i} text={bookmark.name} onClick={()=>this.handleBookmark(bookmark)}/>)
 
     return (
       <div className="App">
         <FlexPaneContainer>
           <FlexPane title="targets">
-            <FlexPaneBar className="main-bar top-menu">
+            <FlexPaneBar className="top-menu">
               
                 <FlexPaneButtons/>
                 <FlexPaneTitle/>
@@ -526,12 +451,12 @@ class App extends Component {
                   <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
                 </MenuItem>
                 <MenuItem>
-                  <Select className="mode" options={modeOptions} onChange={this.handleModeChange} selected={this.state.mode} />
+                  <Select className="mode" options={[{value:'debug',label:'debug'},{value:'release',label:'release'}]} onChange={this.handleModeChange} selected={this.state.mode} />
                 </MenuItem>
                 <MenuItem className="menu-spacer"/>
                 <MenuItem text="make" onClick={()=>{this.handleMakeAll(this.state.mode)}}/>
                 <MenuItem text="clean" onClick={()=>{this.handleMakeAll('clean')}}/>
-                <Popup trigger={<div className="menu-item"><img src={Star}/></div>} position="bottom right" on="hover" arrow={false} contentStyle={{width:'110px', textAlign: 'center'}} >
+                <Popup trigger={<div className="menu-item"><img src={Star} alt="Star"/></div>} position="bottom right" on="hover" arrow={false} contentStyle={{width:'110px', textAlign: 'center', padding: '0px'}} >
                   <div>
                     {bookmarks}
                   </div>
@@ -548,7 +473,7 @@ class App extends Component {
             </FlexPaneBar>
             {tasks} 
           </FlexPane>
-          <FlexPane title="errors" className="errors">
+          <FlexPane title="errors" refPane={this.refErrors} className="errors">
             <FlexPaneBar>
               <FlexPaneButtons/>
               <FlexPaneTitle/>
