@@ -6,14 +6,14 @@ function CheckBox(props) {
         let checked = e.target.checked
         props.onChange(checked)
     }
-    return <label key={props.key}><input type="checkbox" name={props.name} checked={props.checked} onChange={onChange}/>{props.name}</label>
+    return <label key={props.key_}><input type="checkbox" name={props.name} checked={props.checked} onChange={onChange}/>{props.name}</label>
 }
 
 class CheckBoxList extends Component {
     render() {
         let props = this.props
         let {items, checked, onChange} = props
-        let checkBoxes = items.map((item,i) => <CheckBox key={i} name={item} checked={checked.indexOf(item) > -1} onChange={(value)=>onChange(item,value)} />)
+        let checkBoxes = items.map((item,i) => <CheckBox key={i} key_={i} name={item} checked={checked.indexOf(item) > -1} onChange={(value)=>onChange(item,value)} />)
         return <React.Fragment>{checkBoxes}</React.Fragment>
     }
 }
@@ -33,7 +33,9 @@ export default class TargetEdit extends Component {
 
     render() {
         let item = this.props.item
-        let inputs = ['name','debug','release','cwd'].map(p => <div><label>{p}<Input value={item[p]} onChange={(value) => this.props.onChange(p,value)} /></label></div> )
+        let inputs = ['name','debug','release','cwd'].map((p,i) => { 
+            return <div key={i}><label>{p}<Input key={i} value={item[p]} onChange={(value) => this.props.onChange(p,value)} /></label></div>
+        })
 
         let envNames = this.props.envs.items.map(item => item.name)
         

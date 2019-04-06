@@ -3,6 +3,7 @@ const {findRoots2, isPathContains, sortedPaths, findTarget, findTarget2} = requi
 const debug = require('debug')('cpp-compile-on-save')
 const fs = require('fs')
 const path = require('path')
+var watch = require('node-watch')
 
 class Manager {
     constructor(taskQueue) {
@@ -12,6 +13,7 @@ class Manager {
     }
 
     onEvent(root,filename) {
+        //debug('onEvent',root,filename)
         let basename = path.basename(filename)
         let ext = path.extname(basename)
         let absFileName = path.join(root,filename)
@@ -49,7 +51,7 @@ class Manager {
 
     update(config, mode) {
 
-        return
+        //return
 
         this._config = config
         this._mode = mode
@@ -66,12 +68,22 @@ class Manager {
         })
 
         roots_.forEach(root => {
-            debug(`fs.watch ${root}`)
-            fs.watch(root,{recursive:true},(event,filename) => {
-                if (filename !== null && (event === 'change' || event === 'rename')) {
-                    this.onEvent(root, filename)
-                }
-            })
+            debug(`watch ${root}`)
+
+            if (process.platform === 'linux') {
+                watch(root, {recursive:true},(event,filename) => {
+                    //debug('event, filename',event,filename)
+                    if (filename !== null && (event === 'change' || event === 'rename' || event === 'update')) {
+                        this.onEvent(root, filename)
+                    }
+                })
+            } else {
+                fs.watch(root,{recursive:true},(event,filename) => {
+                    if (filename !== null && (event === 'change' || event === 'rename')) {
+                        this.onEvent(root, filename)
+                    }
+                })
+            }
             this._watched.push(root)
         })
 

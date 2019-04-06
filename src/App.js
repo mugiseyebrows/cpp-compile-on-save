@@ -46,7 +46,7 @@ class App extends Component {
       stdout: [],
       stderr: [],
       errors: [],
-      targets: [],
+      //targets: [],
       tasks: {queued:[], running:null},
       isActive: false,
       mode: 'debug',
@@ -58,11 +58,9 @@ class App extends Component {
       modeSelect: false,
       targetsVisibility: {},
       makeStat: {},
-      envs: {items:[{name:'foo',path:''},{name:'bar',path:''}],selected:0},
-      targets2: {
-        items: [],
-        selected: 0,
-      }
+      envs: {items:[{name:'default'}],selected:0},
+      targets2: {},
+      
     }
 
     this.refStdout = React.createRef()
@@ -210,11 +208,13 @@ class App extends Component {
 
   emit = (name, data) => {
     //if (this.socket !== undefined) {
+      //console.log('emit',name,data)
       this.socket.emit(name,data)
     //}
   }
 
   updateMade = () => {
+    return
     var made = {}
     var mtime = this.state.mtime
     var modes = ['debug','release']
@@ -259,7 +259,7 @@ class App extends Component {
   }
 
   handleProjectCommand = (command, target, mode) => {
-    this.emit('project-command',{command:command,target:target, mode: mode})
+    this.emit('project-command',{command:command, target:target, mode: mode})
   }
 
   handleOpenFile = (args) => {
@@ -267,12 +267,20 @@ class App extends Component {
     this.emit('open-file',args)
   }
 
-
   handleClean = (subj) => {
+
+    let clean = (key) => {
+      let value = this.state.tasks.running ? this.state[key].slice(-1) : []
+      if (value.length > 0) {
+        value[0].lines = []
+      }
+      this.setState({[key]:value})
+    }
+
     var x = {
-      'errors': () => {this.setState({errors:[]})},
-      'stdout': () => {this.setState({stdout:[]})},
-      'stderr': () => {this.setState({stderr:[]})}
+      'errors': () => clean('errors'),
+      'stdout': () => clean('stdout'),
+      'stderr': () => clean('stderr')
     }
     if (x[subj] != null) {
       x[subj]()
@@ -325,8 +333,13 @@ class App extends Component {
     }
   }
 
+  currentEnv() {
+    return this.state.envs.items[this.state.envs.selected]
+  }
 
   renderTarget = (target,i) => {
+
+    //console.log('renderTarget',target,i)
 
     let mode = this.state.mode
     let modeSelect = this.state.modeSelect
@@ -343,7 +356,14 @@ class App extends Component {
 
     let isChecked = this.state.targetsVisibility[target.name]
     
-    let hiddenRow = modeSelect ? false : !isChecked
+    // let hiddenRow = modeSelect ? false : !isChecked
+
+    let currentEnvName = this.currentEnv().name
+
+
+    let hiddenRow = target.envs.indexOf(currentEnvName) < 0;
+
+    //hiddenRow = false
     
     var rowClasses = classNames({
       "hidden": hiddenRow,
@@ -385,11 +405,24 @@ class App extends Component {
           </tr>)
   }
 
+
+  activeTargets() {
+    let currentEnvName = this.currentEnv().name
+    return this.state.targets2.items.filter(target => target.envs.indexOf(currentEnvName) > -1)
+  }
+
   renderTargets = () => {
+
+    let items = this.state.targets2.items
+
+    if (!items) {
+      return
+    }
 
     var modeSelect = this.state.modeSelect
     var targetsHeader = <tr><th> <MugiMenu items={modeSelect ? ['name','all','none'] : ['name']} onItemClick={(name)=>{this.handleModeSelect(name)}}/> </th><th>made</th><th>make</th><th>make time</th></tr>
-    var targetsBody = this.state.targets.map((target,i) => this.renderTarget(target,i))
+    
+    var targetsBody = items.map((target,i) => this.renderTarget(target,i))
     return (<table className="targets">
               <thead>{targetsHeader}</thead>
               <tbody>{targetsBody}</tbody>
@@ -415,7 +448,9 @@ class App extends Component {
   scrollStdOutAndStdErr = () => {
     setTimeout(()=>{
       let es = [this.refStdout.current, this.refStderr.current, this.refErrors.current]
-      es.forEach( e => e.scrollTop = e.scrollHeight )
+        .filter(e => e)
+        .forEach(e => e.scrollTop = e.scrollHeight)
+      
     },10)
   }
 
@@ -433,11 +468,24 @@ class App extends Component {
     }
   }
 
-  handleModeChange = (e) => {
-    var value = e.target.value
-    this.emit('set-mode', value)
-    //this.setState({'mode':value})
+  renderEnvSelect() {
+      
+    let options = this.state.envs.items ? this.state.envs.items.map(item => ({value:item.name,label:item.name})) : []
+    let onChange = (value) => {
+        //console.log('onChange',value)
+
+        let envs = this.state.envs
+        let index = envs.items.map(env => env.name).indexOf(value)
+        envs.selected = index
+        this.setState({envs})
+
+    }
+
+    let selected = this.state.envs.items[this.state.envs.selected].name
+
+    return <Select className="env" options={options} onChange={onChange} selected={selected} />
   }
+
 
   render() {
 
@@ -453,12 +501,12 @@ class App extends Component {
     //targets = null
 
     let envs = {
-      items: this.state.envs.items,
-      selected: this.state.envs.selected,
-      editor: (item) => <label>Path<Input value={item.path} onChange={(value)=>{item.path = value; let envs = this.state.envs; this.setState({envs})}}/></label>,
+      items: this.state.envs ? this.state.envs.items : [],
+      selected: this.state.envs ? this.state.envs.selected : 0,
+      editor: (item) => <label>Path<Input value={item.path || ''} onChange={(value)=>{item.path = value; let envs = this.state.envs; this.setState({envs})}}/></label>,
       onSelect: (selected)=>{let envs = this.state.envs; envs.selected = selected; this.setState({envs})},
       onAdd: (value) => {
-        let envs = this.state.envs
+        let envs = this.state.envs || {items: []}
         let items = envs.items
         items.push({name:value,path:''})
         envs.selected = items.length-1
@@ -468,23 +516,23 @@ class App extends Component {
     }
 
     let targets2 = {
-      items: this.state.targets2.items,
-      selected: this.state.targets2.selected,
-    editor: (item) => {
+      items: this.state.targets2 ? this.state.targets2.items : [],
+      selected: this.state.targets2 ? this.state.targets2.selected : 0,
+      editor: (item) => {
 
-      //let onAddEnv = (name) => {let targets2 = this.state.targets2; item.envs.push(name);this.setState({targets2})}
-      //let onRemoveEnv = (name) => {let targets2 = this.state.targets2; item.envs.splice(item.envs.indexOf(name),1);this.setState({targets2})}
-      let onChange = (p,value)=>{let targets2 = this.state.targets2; item[p] = value;this.setState({targets2})}
+        //let onAddEnv = (name) => {let targets2 = this.state.targets2; item.envs.push(name);this.setState({targets2})}
+        //let onRemoveEnv = (name) => {let targets2 = this.state.targets2; item.envs.splice(item.envs.indexOf(name),1);this.setState({targets2})}
+        let onChange = (p,value)=>{let targets2 = this.state.targets2; item[p] = value;this.setState({targets2})}
 
-      return <TargetEdit envs={this.state.envs} item={item} onChange={onChange}/>
-    },
+        return <TargetEdit envs={this.state.envs} item={item} onChange={onChange}/>
+      },
       onSelect: (selected) => {
         let targets2 = this.state.targets2
         targets2.selected = selected
         this.setState({targets2})
       },
       onAdd: (value) => {
-        let targets2 = this.state.targets2
+        let targets2 = this.state.targets2 || {items: []}
         targets2.items.push({name:value,debug:'',release:'',cwd:'',kill:[],envs:[]})
         targets2.selected = targets2.items.length - 1
         this.setState({targets2})
@@ -498,9 +546,34 @@ class App extends Component {
 
     //targets = null
 
+    
     return (
       <div className="App">
         <FlexPaneContainer>
+
+          <FlexPane title="envs and targets">
+            <FlexPaneBar>
+              <FlexPaneButtons/>
+              <FlexPaneTitle/>
+            </FlexPaneBar>
+
+            <div style={{display:'block'}}>
+
+            <div> envs
+              <ListEdit {...envs} >
+              </ListEdit>
+              </div>
+
+              <div> targets
+              <ListEdit {...targets2} >
+                <button onClick={()=>{this.emit('setConfig',{envs:this.state.envs,targets:this.state.targets2})}} >save</button>
+              </ListEdit>
+              </div>
+
+            </div>
+
+          </FlexPane>
+
           <FlexPane title="targets">
             <FlexPaneBar className="top-menu">
               
@@ -511,7 +584,10 @@ class App extends Component {
                   <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
                 </MenuItem>
                 <MenuItem>
-                  <Select className="mode" options={[{value:'debug',label:'debug'},{value:'release',label:'release'}]} onChange={this.handleModeChange} selected={this.state.mode} />
+                  {this.renderEnvSelect()}
+                </MenuItem>
+                <MenuItem>
+                  <Select className="mode" options={[{value:'debug',label:'debug'},{value:'release',label:'release'}]} onChange={(value) => this.emit('set-mode',value)} selected={this.state.mode} />
                 </MenuItem>
                 <MenuItem className="menu-spacer"/>
                 <MenuItem text="make" onClick={()=>{this.handleMakeAll(this.state.mode)}}/>
@@ -524,16 +600,6 @@ class App extends Component {
               
             </FlexPaneBar>
             {targets}
-
-            <div style={{display:'none'}}>
-            <ListEdit {...envs} >
-            </ListEdit>
-            
-
-            <ListEdit {...targets2} >
-              <button onClick={()=>{this.emit('setConfig',{envs:this.state.envs,targets:this.state.targets2})}} >save</button>
-            </ListEdit>
-            </div>
 
           </FlexPane>
           <FlexPane title="tasks">

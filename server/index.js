@@ -36,7 +36,7 @@ if (fs.existsSync(build)) {
     app.use(express.static(public))
 }
 
-copyExampleMaybe('targets.json')
+//copyExampleMaybe('targets.json')
 
 var configSrc = path.join(__dirname,'config.' + process.platform + '.json')
 var configDst = path.join(__dirname,'config.json')
@@ -52,12 +52,12 @@ if (!fs.existsSync(configDst)) {
 
 copyExampleMaybe('config.json')
 
-var targets = readJson(path.join(__dirname,'targets.json'))
-findTargets(targets)
+//var targets = readJson(path.join(__dirname,'targets.json'))
+//findTargets(targets)
 
 let config2Path = path.join(__dirname,'..','config2.json')
 
-var config2 = readJson(config2Path)
+let config2 = readJson(config2Path) || {}
 
 //var bookmarks = readJson('bookmarks.json')
 var config = readJson(path.join(__dirname,'config.json'))
@@ -74,14 +74,16 @@ var makeStat = new MakeStat()
 
 var taskQueue = new TaskQueue(makeStat, trafficLights, config)
 
-var roots = findRoots(targets)
+//var roots = findRoots(targets)
 //debug('roots',roots)
 
-var watchHandler = new QtCppWatcher(config, targets, taskQueue)
+//var watchHandler = new QtCppWatcher(config, targets, taskQueue)
 
 var manager = new Manager(taskQueue)
+
 manager.update(config2, config.mode)
 
+/*
 roots.forEach(root => {
     if (process.platform === 'win32') {
         fs.watch(root,{recursive:true},(event,filename) => {
@@ -95,20 +97,20 @@ roots.forEach(root => {
         var events = ['add','change','unlink']
         events.forEach(event => watcher.on(event, handle))
     }
-})
+})*/
 
 io.on('connection', (socket) => {
     debug('io connection')
     //taskQueue.socket = socket
     taskQueue.setSocket(socket)
 
-    socket.on('targets',()=>{
+    /*socket.on('targets',()=>{
         socket.emit('targets',targets)
-    })
+    })*/
 
     socket.on('mtime',()=>{
-        var mtime = getMtime(targets)
-        socket.emit('mtime',mtime)
+        /*var mtime = getMtime(targets)
+        socket.emit('mtime',mtime)*/
     })
 
     socket.on('bookmarks',() => {

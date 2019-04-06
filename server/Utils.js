@@ -112,7 +112,7 @@ function configCmdArgs(config, command, target, mode, cwd) {
         '$cwd': cwd
     }
     if (target != null) {
-        repl['$projectFile'] = target.pro
+        repl['$projectFile'] = target.pro || path.join(cwd, fs.readdirSync(cwd).filter(name => name.endsWith('.pro'))[0])
     } else {
         
     }
@@ -236,7 +236,9 @@ function getMtime(targets) {
 }
 
 function readJson(name) {
-    return fse.readJsonSync(name)
+    if (fs.existsSync(name)) {
+        return fse.readJsonSync(name)
+    }
 }
 
 function writeJson(name,obj) {

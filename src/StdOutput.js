@@ -23,6 +23,6 @@ export default class StdOutput extends Component {
           return <li key={i}>{items}</li>
       })
 
-      return <ul className="proc-data" key={props.key}><li key="-1" className="proc-title">{props.cmd} {props.mode} @ {props.cwd}</li>{data}</ul>
+      return <ul className="proc-data" key={props.key_}><li key="-1" className="proc-title">{props.cmd} {props.mode} @ {props.cwd}</li>{data}</ul>
     }
   }
