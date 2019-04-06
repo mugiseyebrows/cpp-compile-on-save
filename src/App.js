@@ -19,6 +19,9 @@ import MugiMenu from 'react-mugimenu'
 import Select from './Select'
 
 import './App.css'
+import Input from './Input'
+import ListEdit from './ListEdit'
+import TargetEdit from './TargetEdit'
 
 function lastItem(vs) {
   return vs[vs.length-1]
@@ -55,6 +58,11 @@ class App extends Component {
       modeSelect: false,
       targetsVisibility: {},
       makeStat: {},
+      envs: {items:[{name:'foo',path:''},{name:'bar',path:''}],selected:0},
+      targets2: {
+        items: [],
+        selected: 0,
+      }
     }
 
     this.refStdout = React.createRef()
@@ -186,7 +194,11 @@ class App extends Component {
       this.setState({commands:commands})
     })
 
-    var reqs = ['targets','mtime','bookmarks','is-active','get-mode','commands','make-stat']
+    socket.on('config',(config)=>{
+      this.setState({envs:config.envs, targets2:config.targets})
+    })
+
+    var reqs = ['targets','mtime','bookmarks','is-active','get-mode','commands','make-stat','config']
 
     reqs.forEach(req => this.emit(req))
 
@@ -438,6 +450,54 @@ class App extends Component {
    
     let bookmarks = this.state.bookmarks.map((bookmark,i) => <MenuItem key={i} text={bookmark.name} onClick={()=>this.handleBookmark(bookmark)}/>)
 
+    //targets = null
+
+    let envs = {
+      items: this.state.envs.items,
+      selected: this.state.envs.selected,
+      editor: (item) => <label>Path<Input value={item.path} onChange={(value)=>{item.path = value; let envs = this.state.envs; this.setState({envs})}}/></label>,
+      onSelect: (selected)=>{let envs = this.state.envs; envs.selected = selected; this.setState({envs})},
+      onAdd: (value) => {
+        let envs = this.state.envs
+        let items = envs.items
+        items.push({name:value,path:''})
+        envs.selected = items.length-1
+        this.setState({envs})
+      },
+      onRemove: (selected) => {let envs = this.state.envs; let items = envs.items; items.splice(selected,1); this.setState({envs})},
+    }
+
+    let targets2 = {
+      items: this.state.targets2.items,
+      selected: this.state.targets2.selected,
+    editor: (item) => {
+
+      //let onAddEnv = (name) => {let targets2 = this.state.targets2; item.envs.push(name);this.setState({targets2})}
+      //let onRemoveEnv = (name) => {let targets2 = this.state.targets2; item.envs.splice(item.envs.indexOf(name),1);this.setState({targets2})}
+      let onChange = (p,value)=>{let targets2 = this.state.targets2; item[p] = value;this.setState({targets2})}
+
+      return <TargetEdit envs={this.state.envs} item={item} onChange={onChange}/>
+    },
+      onSelect: (selected) => {
+        let targets2 = this.state.targets2
+        targets2.selected = selected
+        this.setState({targets2})
+      },
+      onAdd: (value) => {
+        let targets2 = this.state.targets2
+        targets2.items.push({name:value,debug:'',release:'',cwd:'',kill:[],envs:[]})
+        targets2.selected = targets2.items.length - 1
+        this.setState({targets2})
+      },
+      onRemove: (selected) => {
+        let targets2 = this.state.targets2
+        targets2.items.splice(selected,1)
+        this.setState({targets2})
+      }
+    }
+
+    //targets = null
+
     return (
       <div className="App">
         <FlexPaneContainer>
@@ -464,6 +524,17 @@ class App extends Component {
               
             </FlexPaneBar>
             {targets}
+
+            <div style={{display:'none'}}>
+            <ListEdit {...envs} >
+            </ListEdit>
+            
+
+            <ListEdit {...targets2} >
+              <button onClick={()=>{this.emit('setConfig',{envs:this.state.envs,targets:this.state.targets2})}} >save</button>
+            </ListEdit>
+            </div>
+
           </FlexPane>
           <FlexPane title="tasks">
             <FlexPaneBar>

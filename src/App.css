@@ -197,3 +197,10 @@ select.mode {
   height: 20px;
 }
 
+.list-item {
+  cursor: pointer;
+}
+
+.list-item-selected {
+  font-weight: bold;
+}

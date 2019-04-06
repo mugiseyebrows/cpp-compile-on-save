@@ -11,6 +11,7 @@ class QtCppWatcher {
         this.taskQueue = taskQueue
     }
     handle(root, filename) {
+
         if (filename === null) {
             debug('filename is null',event)
             return

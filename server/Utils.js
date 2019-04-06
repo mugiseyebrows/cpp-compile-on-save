@@ -6,7 +6,18 @@ const {spawn} = require('child_process')
 const debug = require('debug')('cpp-compile-on-save')
 const fse = require('fs-extra')
 
+function isArray(v) {
+    return Array.isArray(v)
+}
+
+function any(vs) {
+    return vs.reduce((p,c)=> p || c, false)
+}
+
 function isPathContains(parent,child) {
+    if (isArray(parent)) {
+        return any(parent.map(p => isPathContains(p,child)))
+    }
     var path_sep = /[\\/]/g
     let p = parent.split(path_sep)
     let c = child.split(path_sep)
@@ -19,6 +30,18 @@ function isPathContains(parent,child) {
         }
     }
     return true
+}
+
+function sortedPaths(paths, asc = true) {
+    let [k1,k2] = asc ? [-1,1] : [1,-1]
+    let paths_ = paths.slice()
+    paths_.sort( (path1,path2) => pathDepth(path1) < pathDepth(path2) ? k1 : k2 )
+    return paths_
+}
+
+function pathDepth(path) {
+    const path_sep = /[\\/]/g
+    return path.split(path_sep).length
 }
 
 function findRoots(targets) {
@@ -34,6 +57,22 @@ function findRoots(targets) {
     return roots
 }
 
+function findRoots2(paths) {
+    let result = []
+    var path_sep = /[\\/]/g
+    paths = sortedPaths(paths)
+
+    //debug('sorted paths',paths)
+
+    paths.forEach(path => {
+        
+        if (!isPathContains(result,path) && path !== "") {
+            result.push(path)
+        }
+    })
+    return result
+}
+
 function findTarget(targets,p) {
     var targets_  = targets.slice()
     let path_sep = /[\\/]/g
@@ -43,6 +82,18 @@ function findTarget(targets,p) {
             return targets_[i];
         }
     }
+}
+
+function findTarget2(config,p) {
+    let items =  config.targets.items.filter(item => isPathContains(item.cwd, p))
+
+    //config.targets.items.map(item => console.log('isPathContains(p, item.cwd)',isPathContains(p, item.cwd),'p',p,'item.cwd',item.cwd))
+
+    let depths = items.map(item => pathDepth(item.cwd))
+
+    //console.log('findTarget2 items',items)
+
+    return items[depths.indexOf(Math.max(...depths))]
 }
 
 function copyExampleMaybe(name) {
@@ -185,13 +236,16 @@ function getMtime(targets) {
 }
 
 function readJson(name) {
-    return fse.readJsonSync(path.join(__dirname,name))
+    return fse.readJsonSync(name)
 }
 
+function writeJson(name,obj) {
+    return fse.writeJSONSync(name,obj,{spaces:1})
+}
 
-module.exports = {isPathContains:isPathContains, findRoots:findRoots, findTarget:findTarget, 
-    copyExampleMaybe:copyExampleMaybe, toCmdArgs:toCmdArgs, spawnDetached:spawnDetached, 
-    guessPro:guessPro, readJson:readJson, getMtime:getMtime, configCmdArgs:configCmdArgs,
-    findTargets:findTargets
+module.exports = {isPathContains, findRoots, findTarget, 
+    copyExampleMaybe, toCmdArgs, spawnDetached, 
+    guessPro, readJson, writeJson, getMtime, configCmdArgs,
+    findTargets, findRoots2, sortedPaths, pathDepth, findTarget2
 }
 

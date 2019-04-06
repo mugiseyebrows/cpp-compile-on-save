@@ -17,8 +17,9 @@ const fs = require('fs')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {findRoots, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, findTargets, getMtime, readJson} = require('./Utils')
+const {findRoots, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, findTargets, getMtime, readJson, writeJson} = require('./Utils')
 const QtCppWatcher = require('./QtCppWatcher')
+const Manager = require('./Manager')
 
 var port = 4000;
 server.listen(port, () => {
@@ -51,12 +52,15 @@ if (!fs.existsSync(configDst)) {
 
 copyExampleMaybe('config.json')
 
-var targets = readJson('targets.json')
+var targets = readJson(path.join(__dirname,'targets.json'))
 findTargets(targets)
 
+let config2Path = path.join(__dirname,'..','config2.json')
+
+var config2 = readJson(config2Path)
 
 //var bookmarks = readJson('bookmarks.json')
-var config = readJson('config.json')
+var config = readJson(path.join(__dirname,'config.json'))
 config.active = true
 
 if (config.mode === undefined) {
@@ -74,6 +78,9 @@ var roots = findRoots(targets)
 //debug('roots',roots)
 
 var watchHandler = new QtCppWatcher(config, targets, taskQueue)
+
+var manager = new Manager(taskQueue)
+manager.update(config2, config.mode)
 
 roots.forEach(root => {
     if (process.platform === 'win32') {
@@ -182,6 +189,17 @@ io.on('connection', (socket) => {
         debug('make-stat')
         socket.emit('make-stat',makeStat.stat)
     })
+
+    socket.on('setConfig',(config) => {
+        writeJson(config2Path,config)
+        config2 = config
+        manager.update(config2, config.mode)
+    })
+
+    socket.on('config',()=>{
+        socket.emit('config',config2)
+    })
+
 
     socket.on('project-command', opts => {
         let {command, target, mode} = opts;
