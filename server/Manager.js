@@ -9,7 +9,8 @@ class Manager {
     constructor(taskQueue) {
         this._taskQueue = taskQueue
         this._watched = []
-        
+        this._mode = 'debug'
+        this._active = false
     }
 
     onEvent(root,filename) {
@@ -27,34 +28,45 @@ class Manager {
         } else if (binaryExts.has(ext)) {
             taskQueue.emit('binary-changed',absFileName)
         } else if (sourceExts.has(ext)) {
-            /*if (!config.active) {
+
+            if (!this._active) {
+                //debug('!active')
                 return
-            }*/
-            /*let doNotWatch = path.join(root,'.do-not-watch')
-            if (fs.existsSync(doNotWatch)) {
-                debug(`${doNotWatch} exists`)
-                return
-            } */
-            //debug('QtCppWatcher.handle cpp|h',filename)
+            }
+
             let target = findTarget2(this._config,absFileName)
 
-            //console.log('findTarget2',target)
+            let mode = this._mode
+            let {cwd, kill, name} = target
 
-            //console.log('mode',this._mode)
-
-            //debug(`filename ${filename} target ${target} absFileName ${absFileName}`)
-            let task = {cmd:'make',mode:this._mode,cwd:target.cwd,kill:target.kill,name:target.name}
+            let task = {cmd:'make',mode,cwd,kill,name}
             taskQueue.add(task,false,target)
         }
 
     }
 
-    update(config, mode) {
+    get mode() {
+        return this._mode
+    }
+
+    setMode(mode) {
+        this._mode = mode
+    }
+
+    setActive(active) {
+        this._active = active
+    }
+
+    get active() {
+        return this._active
+    }
+
+    update(config) {
 
         //return
 
         this._config = config
-        this._mode = mode
+        
 
         let roots = findRoots2(config.targets.items.map(item => item.cwd))
 

@@ -17,8 +17,7 @@ const fs = require('fs')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {findRoots, copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, findTargets, getMtime, readJson, writeJson} = require('./Utils')
-const QtCppWatcher = require('./QtCppWatcher')
+const {copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, getMtime2, readJson, writeJson} = require('./Utils')
 const Manager = require('./Manager')
 
 var port = 4000;
@@ -61,13 +60,7 @@ let config2 = readJson(config2Path) || {}
 
 //var bookmarks = readJson('bookmarks.json')
 var config = readJson(path.join(__dirname,'config.json'))
-config.active = true
 
-if (config.mode === undefined) {
-    config.mode = 'debug'
-}
-
-//debug('config',config)
 
 var trafficLights = new TrafficLights(config.serialPort)
 var makeStat = new MakeStat()
@@ -80,8 +73,9 @@ var taskQueue = new TaskQueue(makeStat, trafficLights, config)
 //var watchHandler = new QtCppWatcher(config, targets, taskQueue)
 
 var manager = new Manager(taskQueue)
-
-manager.update(config2, config.mode)
+manager.setMode('debug')
+manager.setActive(true)
+manager.update(config2)
 
 /*
 roots.forEach(root => {
@@ -109,8 +103,9 @@ io.on('connection', (socket) => {
     })*/
 
     socket.on('mtime',()=>{
-        /*var mtime = getMtime(targets)
-        socket.emit('mtime',mtime)*/
+        var mtime = getMtime2(config2.targets)
+        //debug('mtime',mtime)
+        socket.emit('mtime',mtime)
     })
 
     socket.on('bookmarks',() => {
@@ -118,7 +113,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('open-bookmark', bookmark => {
-        let {cmd, args} = configCmdArgs(config, bookmark.name, null, config.mode, __dirname)
+        let {cmd, args} = configCmdArgs(config, bookmark.name, null, manager.mode, __dirname)
         debug('open-bookmark',cmd,args)
         spawnDetached(cmd, args)
     })
@@ -126,15 +121,14 @@ io.on('connection', (socket) => {
 
     socket.on('open-file', obj => {
 
-        let {cwd,lineNum,colNum} = obj
-
+        let {cwd,lineNum} = obj
         let path_ = obj.path
 
         if (!path.isAbsolute(path_)) {
-            path_ = path.join(obj.cwd, path_)
+            path_ = path.join(cwd, path_)
         }
-        if (obj.lineNum !== undefined) {
-            path_ = path_ + ':' + obj.lineNum
+        if (lineNum !== undefined) {
+            path_ = path_ + ':' + lineNum
         }
         // qtcreator doesn't understand path:row:col format
         /*if (obj.colNum !== null) {
@@ -147,23 +141,25 @@ io.on('connection', (socket) => {
 
     socket.on('set-active', value=>{
         debug('set-active',value)
-        config.active = value
+        //config.active = value
+        manager.setActive(value)
     })
 
     socket.on('is-active',()=>{
-        debug('is-active',config.active)
-        socket.emit('is-active',config.active)
+        
+        socket.emit('is-active',manager.active)
     })
 
     socket.on('set-mode', newMode => {
         debug('set-mode', newMode)
-        config.mode = newMode
-        socket.emit('get-mode',config.mode)
+
+        manager.setMode(newMode)
+        socket.emit('get-mode',manager.mode)
     })
 
     socket.on('get-mode', () => {
-        debug('get-mode', config.mode)
-        socket.emit('get-mode', config.mode)
+        debug('get-mode', manager.mode)
+        socket.emit('get-mode', manager.mode)
     })
 
     socket.on('cancel', () => {
@@ -195,7 +191,7 @@ io.on('connection', (socket) => {
     socket.on('setConfig',(config) => {
         writeJson(config2Path,config)
         config2 = config
-        manager.update(config2, config.mode)
+        manager.update(config2)
     })
 
     socket.on('config',()=>{

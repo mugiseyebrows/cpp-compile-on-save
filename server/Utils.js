@@ -235,6 +235,25 @@ function getMtime(targets) {
     return mtime
 }
 
+function getMtime2(targets2) {
+    let modes = ['debug','release']
+    let mtime = {}
+
+    targets2.items.forEach(target => {
+        mtime[target.name] = {
+            debug:null,
+            release:null
+        }
+        modes.forEach(mode => {
+            let p = target[mode]
+            if (p.length > 0 && fs.existsSync(p)) {
+                mtime[target.name][mode] = fs.statSync(p).mtime
+            }
+        })
+    })
+    return mtime
+}
+
 function readJson(name) {
     if (fs.existsSync(name)) {
         return fse.readJsonSync(name)
@@ -248,6 +267,6 @@ function writeJson(name,obj) {
 module.exports = {isPathContains, findRoots, findTarget, 
     copyExampleMaybe, toCmdArgs, spawnDetached, 
     guessPro, readJson, writeJson, getMtime, configCmdArgs,
-    findTargets, findRoots2, sortedPaths, pathDepth, findTarget2
+    findTargets, findRoots2, sortedPaths, pathDepth, findTarget2, getMtime2
 }
 

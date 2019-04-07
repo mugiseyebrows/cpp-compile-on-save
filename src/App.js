@@ -167,6 +167,7 @@ class App extends Component {
     })
 
     socket.on('mtime',(mtime)=>{
+      //console.log('mtime')
       this.setState({mtime:mtime})
       this.updateMade()
     })
@@ -194,6 +195,7 @@ class App extends Component {
 
     socket.on('config',(config)=>{
       this.setState({envs:config.envs, targets2:config.targets})
+      this.updateMade()
     })
 
     var reqs = ['targets','mtime','bookmarks','is-active','get-mode','commands','make-stat','config']
@@ -206,6 +208,7 @@ class App extends Component {
 
   }
 
+  
   emit = (name, data) => {
     //if (this.socket !== undefined) {
       //console.log('emit',name,data)
@@ -214,12 +217,20 @@ class App extends Component {
   }
 
   updateMade = () => {
-    return
+    
+    console.log('updateMade')
+
     var made = {}
     var mtime = this.state.mtime
     var modes = ['debug','release']
 
-    this.state.targets.forEach(target => {
+    if (!this.state.targets2.items) {
+      //console.log(this.state.targets2)
+      return
+    }
+
+    this.state.targets2.items.forEach(target => {
+      //console.log('target',target)
       made[target.name] = {debug:null,release:null}
       modes.forEach(mode => {
         if (mtime[target.name] && mtime[target.name][mode]) {
@@ -339,8 +350,6 @@ class App extends Component {
 
   renderTarget = (target,i) => {
 
-    //console.log('renderTarget',target,i)
-
     let mode = this.state.mode
     let modeSelect = this.state.modeSelect
 
@@ -416,6 +425,7 @@ class App extends Component {
     let items = this.state.targets2.items
 
     if (!items) {
+      console.log('!items')
       return
     }
 
@@ -566,7 +576,10 @@ class App extends Component {
 
               <div> targets
               <ListEdit {...targets2} >
-                <button onClick={()=>{this.emit('setConfig',{envs:this.state.envs,targets:this.state.targets2})}} >save</button>
+                <button onClick={()=>{
+                  this.emit('setConfig',{envs:this.state.envs,targets:this.state.targets2});
+                  this.emit('mtime')
+                }} >save</button>
               </ListEdit>
               </div>
 
