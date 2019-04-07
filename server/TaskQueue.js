@@ -4,29 +4,27 @@ const debug = require('debug')('cpp-compile-on-save')
 const fkill = require('fkill')
 const {spawn} = require('child_process')
 const {configCmdArgs} = require('./Utils')
+const EventEmitter = require('events');
 
-class StdStreamCacher {
+class StdStreamCacher extends EventEmitter {
     constructor() {
-        
-        this.chans = ['stdout','stderr']
-
+        super()
+        this._chans = ['stdout','stderr']
         this.data = {}
-
-        this.chans.forEach(chan => {
+        this._chans.forEach(chan => {
             this.data[chan] = {}
         })
-
         this.handle = setInterval(()=>{
             this.flush()
         },1000)
     }
 
-    setSocket(socket) {
-        this.socket = socket
+    get chans() {
+        return this._chans
     }
 
     listen(proc, cwd) {
-        this.chans.forEach(chan => {
+        this._chans.forEach(chan => {
             proc[chan].on('data', data => {
                 let text = data.toString()
                 this.data[chan][cwd] = (this.data[chan][cwd] || '') + text
@@ -34,16 +32,8 @@ class StdStreamCacher {
         })
     }
 
-    emit(tag,obj) {
-        if (this.socket === undefined) {
-            debug('OutCacher this.socket === undefined')
-            return
-        }
-        this.socket.emit(tag,obj)
-    }
-
     flush() {
-        this.chans.forEach(chan => {
+        this._chans.forEach(chan => {
             for(let cwd in this.data[chan]) {
                 let data = this.data[chan][cwd]
                 if (data !== '' && data !== undefined) {
@@ -70,22 +60,29 @@ function addKillTasksMaybe(taskQueue, stderrText, task) {
     }
 }
 
-class TaskQueue {
+class TaskQueue extends EventEmitter {
     constructor(makeStat,trafficLights,config) {
+        super()
         this.proc = null
         this.tasks = []
-        this.socket = null
+
         this.handle = null
         this.makeStat = makeStat
         this.trafficLights = trafficLights
         this.config = config
         this.running = null
-        this.stdStreamCacher = new StdStreamCacher()
+
+        let cacher = new StdStreamCacher()
+        cacher.chans.forEach(chan => {
+            cacher.on(chan,(data)=>{
+                this.emit(chan, data)
+            })
+        })
+        this._cacher = cacher        
     }
 
-    setSocket(socket) {
-        this.socket = socket
-        this.stdStreamCacher.setSocket(socket)
+    eventNames() {
+        return ['tasks','make-stat','proc-start','proc-exit'].concat(this._cacher.chans)
     }
 
     emitTasks() {
@@ -96,13 +93,13 @@ class TaskQueue {
         this.emit('make-stat',this.makeStat.stat)
     }
 
-    emit(type,data) {
+    /*emit(type,data) {
         //debug('emit',type)
         if (this.socket === null) {
             return;
         }
         this.socket.emit(type,data)
-    }
+    }*/
 
     hasTask(newTask) {
         if (newTask.cwd === undefined) {
@@ -188,7 +185,7 @@ class TaskQueue {
 
                 this.trafficLights.blue()
 
-                this.stdStreamCacher.listen(this.proc, cwd)
+                this._cacher.listen(this.proc, cwd)
 
                 if (task.name === undefined) {
                     debug(`task.name === undefined 1`)

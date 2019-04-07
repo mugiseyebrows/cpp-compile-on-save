@@ -95,8 +95,13 @@ roots.forEach(root => {
 
 io.on('connection', (socket) => {
     debug('io connection')
-    //taskQueue.socket = socket
-    taskQueue.setSocket(socket)
+    
+    // pipe taskQueue events to socket
+    taskQueue.eventNames().forEach(name => {
+        taskQueue.on(name, (obj) => {
+            socket.emit(name,obj)
+        })
+    })
 
     /*socket.on('targets',()=>{
         socket.emit('targets',targets)
