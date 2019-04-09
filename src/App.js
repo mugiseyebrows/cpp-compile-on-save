@@ -170,6 +170,7 @@ class App extends Component {
       //console.log('mtime')
       this.setState({mtime:mtime})
       this.updateMade()
+      console.log('mtime')
     })
 
     socket.on('make-stat',(makeStat)=>{
@@ -260,9 +261,15 @@ class App extends Component {
   }
 
   handleMakeAll = (mode) => {
-    this.state.targets
+    /*this.state.targets
       .filter((target) => this.state.targetsVisibility[target.name])
-      .forEach(target => this.handleProjectCommand('make', target, mode))
+      .forEach(target => this.handleProjectCommand('make', target, mode))*/
+
+      let envName = this.currentEnv().name
+      this.state.targets2.items
+        .filter( target => target.envs.indexOf(envName) > -1 )
+        .forEach( target => this.handleProjectCommand('make',target, mode) )
+
   }
   
   handleBookmark = (k) => {
@@ -370,11 +377,11 @@ class App extends Component {
     let currentEnvName = this.currentEnv().name
 
 
-    let hiddenRow = target.envs.indexOf(currentEnvName) < 0;
+    let hiddenRow = target.envs ? (target.envs.indexOf(currentEnvName) < 0) : false
 
     //hiddenRow = false
     
-    var rowClasses = classNames({
+    let rowClasses = classNames({
       "hidden": hiddenRow,
       "compile-success": makeCode === 0, 
       "compile-error": makeCode !== 0 && makeCode !== null
@@ -542,7 +549,10 @@ class App extends Component {
         this.setState({targets2})
       },
       onAdd: (value) => {
-        let targets2 = this.state.targets2 || {items: []}
+        let targets2 = this.state.targets2 || {}
+        if (!targets2.items) {
+          targets2.items = []
+        }
         targets2.items.push({name:value,debug:'',release:'',cwd:'',kill:[],envs:[]})
         targets2.selected = targets2.items.length - 1
         this.setState({targets2})
@@ -561,7 +571,7 @@ class App extends Component {
       <div className="App">
         <FlexPaneContainer>
 
-          <FlexPane title="envs and targets">
+          <FlexPane title="config" mode="hidden">
             <FlexPaneBar>
               <FlexPaneButtons/>
               <FlexPaneTitle/>
@@ -589,10 +599,8 @@ class App extends Component {
 
           <FlexPane title="targets">
             <FlexPaneBar className="top-menu">
-              
                 <FlexPaneButtons/>
                 <FlexPaneTitle/>
-                <MenuItem text="edit" onClick={()=>this.emit('edit-targets')}/>
                 <MenuItem>
                   <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
                 </MenuItem>
@@ -629,7 +637,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MugiMenu items={['clean']} onItemClick={() => this.handleClean('errors')}/>
             </FlexPaneBar>
-            <StdOutputs data={this.state.errors} onAnchor={this.handleOpenFile}/>
+            <StdOutputs data={this.state.errors} onAnchor={this.handleOpenFile} showEmpty={false}/>
           </FlexPane>
           <FlexPane title="stdout" refPane={this.refStdout} className="stdout">
             <FlexPaneBar>

@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
     socket.on('project-command', opts => {
         let {command, target, mode} = opts;
         
-        debug('project-command', opts.command, target, mode)
+        debug('project-command', opts.command, target.name, mode)
 
         var command_ = [...config.commands.shown, ...config.commands.hidden].filter( c => c.name == command )
 

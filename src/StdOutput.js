@@ -8,8 +8,11 @@ export default class StdOutput extends Component {
     }
     render() {
       let props = this.props
-      //console.log('StdOutput.render',props.cmd,props.mode,props.cwd)
-      let data = props.lines.map((line,i) => {
+      let {lines, showEmpty, key_, cmd, cwd, mode} = this.props
+      if (showEmpty === false && lines.length === 0) {
+        return null
+      }
+      let data = lines.map((line,i) => {
           let items = line.map((item,j) => {
             //console.log('subitem',subitem)
             if (item.t === 't') {
@@ -23,6 +26,6 @@ export default class StdOutput extends Component {
           return <li key={i}>{items}</li>
       })
 
-      return <ul className="proc-data" key={props.key_}><li key="-1" className="proc-title">{props.cmd} {props.mode} @ {props.cwd}</li>{data}</ul>
+      return <ul className="proc-data" key={key_}><li key="-1" className="proc-title">{cmd} {mode} @ {cwd}</li>{data}</ul>
     }
   }
