@@ -4,8 +4,8 @@ import React, { Component } from 'react'
 
 export default class Input extends Component {
     render() {
-        let {value, onChange} = this.props
+        let {value, onChange, id} = this.props
         //console.log('Input',value, onChange)
-        return <input type="text" value={value} onChange={(e) => onChange(e.target.value)}/>
+        return <input type="text" id={id} value={value} onChange={(e) => onChange(e.target.value)}/>
     }
 }

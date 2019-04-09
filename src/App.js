@@ -4,7 +4,7 @@ import 'react-flexpane/dist/styles.css'
 
 import io from 'socket.io-client'
 import classNames from "classnames"
-import CheckBox from './CheckBox'
+import CheckBoxWithLabel from './CheckBoxWithLabel'
 import Popup from "reactjs-popup";
 //import Select from 'react-select'
 
@@ -22,6 +22,7 @@ import './App.css'
 import Input from './Input'
 import ListEdit from './ListEdit'
 import TargetEdit from './TargetEdit'
+import TwoColumnsTable from './TwoColumnTable'
 
 function lastItem(vs) {
   return vs[vs.length-1]
@@ -58,9 +59,9 @@ class App extends Component {
       modeSelect: false,
       targetsVisibility: {},
       makeStat: {},
-      envs: {items:[{name:'default'}],selected:0},
-      targets2: {},
-      
+      envs: {items: [], selected: 0},
+      targets2: {items: [], selected: 0},
+      commands2: {items: [], selected: 0}
     }
 
     this.refStdout = React.createRef()
@@ -170,7 +171,7 @@ class App extends Component {
       //console.log('mtime')
       this.setState({mtime:mtime})
       this.updateMade()
-      console.log('mtime')
+      //console.log('mtime')
     })
 
     socket.on('make-stat',(makeStat)=>{
@@ -195,7 +196,7 @@ class App extends Component {
     })
 
     socket.on('config',(config)=>{
-      this.setState({envs:config.envs, targets2:config.targets})
+      this.setState({envs:config.envs, targets2:config.targets, commands2: config.commands})
       this.updateMade()
     })
 
@@ -219,7 +220,7 @@ class App extends Component {
 
   updateMade = () => {
     
-    console.log('updateMade')
+    //console.log('updateMade')
 
     var made = {}
     var mtime = this.state.mtime
@@ -370,10 +371,9 @@ class App extends Component {
       }
     }
 
-    let isChecked = this.state.targetsVisibility[target.name]
+    let checked = this.state.targetsVisibility[target.name]
     
-    // let hiddenRow = modeSelect ? false : !isChecked
-
+    
     let currentEnvName = this.currentEnv().name
 
 
@@ -397,7 +397,7 @@ class App extends Component {
     
     return (<tr key={i} className={rowClasses}>
           <td>
-            <CheckBox className={classNames("target-show-hide",{"hidden":!modeSelect})} onChange={() => this.toggleVisibility(target)} isChecked={isChecked} />
+            <CheckBoxWithLabel className={classNames("target-show-hide",{"hidden":!modeSelect})} onChange={() => this.toggleVisibility(target)} checked={checked} />
             <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
           </td>
           <td>{made}</td>
@@ -465,7 +465,7 @@ class App extends Component {
   scrollStdOutAndStdErr = () => {
     setTimeout(()=>{
       let es = [this.refStdout.current, this.refStderr.current, this.refErrors.current]
-        .filter(e => e)
+      es.filter(e => e)
         .forEach(e => e.scrollTop = e.scrollHeight)
       
     },10)
@@ -496,6 +496,10 @@ class App extends Component {
         envs.selected = index
         this.setState({envs})
 
+    }
+
+    if (this.state.envs.items.length === 0) {
+      return null
     }
 
     let selected = this.state.envs.items[this.state.envs.selected].name
@@ -564,6 +568,43 @@ class App extends Component {
       }
     }
 
+    let commands = {
+      items: this.state.commands2.items,
+      selected: this.state.commands2.selected,
+      editor: (item) => {
+
+        //console.log('editor(item)', item)
+
+        let commands2 = this.state.commands2
+        let labels = ['name','cmd']
+        let items = labels.map(name => <Input value={item[name]} onChange={value => {item[name] = value; this.setState({commands2})}}/>)
+
+        labels.push('')
+        items.push(<CheckBoxWithLabel label="task" checked={item.task} onChange={checked => { item.task = !item.task; this.setState({commands2})}} />)
+        
+        labels.push('')
+        items.push(<CheckBoxWithLabel label="shown" checked={item.shown} onChange={checked => { item.shown = !item.shown; this.setState({commands2})}} />)
+
+        return <TwoColumnsTable labels={labels} items={items} prefix="commands"/>
+      },
+      onSelect: (selected) => {
+        let commands2 = this.state.commands2
+        commands2.selected = selected
+        this.setState({commands2})
+      },
+      onAdd: (value) => {
+        let item = {name: value, task: false, shown: false, cmd: ''}
+        let commands2 = this.state.commands2
+        commands2.items.push(item)
+        this.setState({commands2})
+      },
+      onRemove: (selected) => {
+        let commands2 = this.state.commands2
+        commands2.items.splice(selected,1)
+        this.setState({commands2})
+      }
+    }
+
     //targets = null
 
     
@@ -571,7 +612,7 @@ class App extends Component {
       <div className="App">
         <FlexPaneContainer>
 
-          <FlexPane title="config" mode="hidden">
+          <FlexPane title="config" mode="normal">
             <FlexPaneBar>
               <FlexPaneButtons/>
               <FlexPaneTitle/>
@@ -586,11 +627,21 @@ class App extends Component {
 
               <div> targets
               <ListEdit {...targets2} >
-                <button onClick={()=>{
-                  this.emit('setConfig',{envs:this.state.envs,targets:this.state.targets2});
+                
+              </ListEdit>
+
+              commands
+              <ListEdit {...commands} >
+
+              </ListEdit>
+
+              <button onClick={()=>{
+                  let data = {envs:this.state.envs,targets:this.state.targets2,commands:this.state.commands2}
+                  //console.log(data)
+                  this.emit('set-config',data);
                   this.emit('mtime')
                 }} >save</button>
-              </ListEdit>
+
               </div>
 
             </div>
@@ -602,7 +653,7 @@ class App extends Component {
                 <FlexPaneButtons/>
                 <FlexPaneTitle/>
                 <MenuItem>
-                  <CheckBox label="active" isChecked={this.state.isActive} onChange={this.handleActiveChange} />
+                  <CheckBoxWithLabel label="active" checked={this.state.isActive} onChange={this.handleActiveChange} />
                 </MenuItem>
                 <MenuItem>
                   {this.renderEnvSelect()}

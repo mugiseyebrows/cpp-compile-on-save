@@ -193,7 +193,8 @@ io.on('connection', (socket) => {
         socket.emit('make-stat',makeStat.stat)
     })
 
-    socket.on('setConfig',(config) => {
+    socket.on('set-config',(config) => {
+        debug('set-config',config)
         writeJson(config2Path,config)
         config2 = config
         manager.update(config2)
