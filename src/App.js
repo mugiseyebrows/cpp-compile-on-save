@@ -49,15 +49,10 @@ class App extends Component {
       errors: [],
       //targets: [],
       tasks: {queued:[], running:null},
-      isActive: false,
+      active: false,
       mode: 'debug',
-
       made : {},
       mtime: {},
-      commands: {shown:[],hidden:[]},
-      bookmarks: [],
-      modeSelect: false,
-      targetsVisibility: {},
       makeStat: {},
       envs: {items: [], selected: 0},
       targets2: {items: [], selected: 0},
@@ -182,8 +177,8 @@ class App extends Component {
       this.setState({bookmarks:bookmarks})
     })
     
-    socket.on('is-active', (isActive) => {
-      this.setState({isActive:isActive})
+    socket.on('is-active', (active) => {
+      this.setState({active})
     })
 
     socket.on('get-mode',(mode)=>{
@@ -210,12 +205,8 @@ class App extends Component {
 
   }
 
-  
   emit = (name, data) => {
-    //if (this.socket !== undefined) {
-      //console.log('emit',name,data)
-      this.socket.emit(name,data)
-    //}
+    this.socket.emit(name,data)
   }
 
   updateMade = () => {
@@ -245,21 +236,13 @@ class App extends Component {
   }
 
   handleActiveChange = (e) => {
-    var isActive = this.state.isActive
-    isActive = !isActive
-    this.setState({isActive:isActive})
-    this.emit('set-active',isActive)
+    this.setState({active:!this.state.active})
+    this.emit('set-active',this.state.active)
   }
 
   toggleModeSelect = () => {
     this.setState({modeSelect:!this.state.modeSelect})
   }
-
-  /*handleEditOrSelectTargets = (name) => {
-    if (name === 'edit') {
-      this.emit('edit-targets')
-    }
-  }*/
 
   handleMakeAll = (mode) => {
     /*this.state.targets
@@ -271,10 +254,6 @@ class App extends Component {
         .filter( target => target.envs.indexOf(envName) > -1 )
         .forEach( target => this.handleProjectCommand('make',target, mode) )
 
-  }
-  
-  handleBookmark = (k) => {
-    this.emit('open-bookmark',k)
   }
 
   handleProjectCommand = (command, target, mode) => {
@@ -346,8 +325,12 @@ class App extends Component {
     }
   }
 
-  currentEnv() {
-    return this.state.envs.items[this.state.envs.selected]
+  currentEnvName() {
+    let selected = this.state.envs.selected
+    let items = this.state.envs.items
+    if (items[selected]) {
+      return items[selected].name
+    }
   }
 
   renderTarget = (target,i) => {
@@ -368,8 +351,7 @@ class App extends Component {
     //let checked = this.state.targetsVisibility[target.name]
     
     
-    let currentEnvName = this.currentEnv().name
-
+    let currentEnvName = this.currentEnvName()
 
     let hiddenRow = target.envs ? (target.envs.indexOf(currentEnvName) < 0) : false
 
@@ -386,9 +368,15 @@ class App extends Component {
       made = this.state.made[target.name][mode]
     }
 
-    var menuShown = this.state.commands.shown.map((command,i) => <div key={i} className="menu-item" onClick={() => this.handleProjectCommand(command.name, target, mode)}> {command.name}</div>)
-    var menuHidden = this.state.commands.hidden.map((command,i) => <div key={i} className="menu-item" onClick={() => this.handleProjectCommand(command.name, target, mode)}> {command.name}</div>)
-    
+    let notBookmarks = this.state.commands2.items.filter(item => item.bookmark === false)
+
+    //console.log('notBookmarks',notBookmarks)
+
+    let renderMenuItem = (command,i) => <div key={i} className="menu-item" onClick={() => this.handleProjectCommand(command.name, target, mode)}> {command.name}</div>
+
+    let menuShown = notBookmarks.filter(item => item.shown === true && item.bookmark === false).map(renderMenuItem)
+    let menuHidden = notBookmarks.filter(item => item.shown === false && item.bookmark === false).map(renderMenuItem)
+
     return (<tr key={i} className={rowClasses}>
           <td>
             <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
@@ -464,38 +452,26 @@ class App extends Component {
     },10)
   }
 
-  handleMainMenu = (name) => {
-    if (name === 'make') {
-      this.handleMakeAll(this.state.mode)
-    } else if (name === 'clean') {
-      this.handleMakeAll('clean')
-    } else {
-      this.state.bookmarks.forEach((bookmark,i) => {
-        if (bookmark.name === name) {
-          this.handleBookmark(bookmark)
-        }
-      })
-    }
-  }
-
   renderEnvSelect() {
       
     let options = this.state.envs.items ? this.state.envs.items.map(item => ({value:item.name,label:item.name})) : []
     let onChange = (value) => {
         //console.log('onChange',value)
-
         let envs = this.state.envs
         let index = envs.items.map(env => env.name).indexOf(value)
         envs.selected = index
         this.setState({envs})
-
     }
 
     if (this.state.envs.items.length === 0) {
       return null
     }
 
-    let selected = this.state.envs.items[this.state.envs.selected].name
+    let selected = this.currentEnvName()
+
+    if (!selected) {
+      return null
+    }
 
     return <Select className="env" options={options} onChange={onChange} selected={selected} />
   }
@@ -510,34 +486,55 @@ class App extends Component {
     //let bookmarks = this.renderBookmarks()
     this.scrollStdOutAndStdErr()
    
-    let bookmarks = this.state.bookmarks.map((bookmark,i) => <MenuItem key={i} text={bookmark.name} onClick={()=>this.handleBookmark(bookmark)}/>)
+    //let bookmarks = this.state.bookmarks.map((bookmark,i) => )
+
+    let bookmarks = this.state.commands2.items.filter(item => item.bookmark === true).map((item,i) => <MenuItem key={i} text={item.name} onClick={()=>this.emit('open-bookmark',item.name)}/>)
 
     //targets = null
 
     let envs = {
+      title: <h3>envs</h3>,
       items: this.state.envs ? this.state.envs.items : [],
       selected: this.state.envs ? this.state.envs.selected : 0,
-      editor: (item) => <label>Path<Input value={item.path || ''} onChange={(value)=>{item.path = value; let envs = this.state.envs; this.setState({envs})}}/></label>,
-      onSelect: (selected)=>{let envs = this.state.envs; envs.selected = selected; this.setState({envs})},
-      onAdd: (value) => {
-        let envs = this.state.envs || {items: []}
-        let items = envs.items
-        items.push({name:value,path:''})
-        envs.selected = items.length-1
+      editor: (item) => {
+        let envs = this.state.envs
+       
+        let labels = ['name','path']
+        let items = labels.map(name => <Input value={item[name]} onChange={value => {item[name] = value; this.setState({envs})}}/>)
+
+        return <TwoColumnsTable labels={labels} items={items} prefix="env-input-"/>
+      },
+      onSelect: (selected) => {
+        let envs = this.state.envs
+        envs.selected = selected
         this.setState({envs})
       },
-      onRemove: (selected) => {let envs = this.state.envs; let items = envs.items; items.splice(selected,1); this.setState({envs})},
+      onAdd: (value) => {
+        let envs = this.state.envs
+        let items = envs.items
+        items.push({name:value,path:''})
+        envs.selected = envs.items.length - 1
+        this.setState({envs})
+      },
+      onRemove: (selected) => {
+        let envs = this.state.envs
+        let items = envs.items
+        items.splice(selected,1)
+        envs.selected = envs.items.length - 1
+        this.setState({envs})
+      },
     }
 
     let targets2 = {
+      title: <h3>targets</h3>,
       items: this.state.targets2 ? this.state.targets2.items : [],
       selected: this.state.targets2 ? this.state.targets2.selected : 0,
       editor: (item) => {
-
-        //let onAddEnv = (name) => {let targets2 = this.state.targets2; item.envs.push(name);this.setState({targets2})}
-        //let onRemoveEnv = (name) => {let targets2 = this.state.targets2; item.envs.splice(item.envs.indexOf(name),1);this.setState({targets2})}
-        let onChange = (p,value)=>{let targets2 = this.state.targets2; item[p] = value;this.setState({targets2})}
-
+        let onChange = (p,value) => {
+          let targets2 = this.state.targets2
+          item[p] = value
+          this.setState({targets2})
+        }
         return <TargetEdit envs={this.state.envs} item={item} onChange={onChange}/>
       },
       onSelect: (selected) => {
@@ -547,9 +544,6 @@ class App extends Component {
       },
       onAdd: (value) => {
         let targets2 = Object.assign({},{items:[],selected:0},this.state.targets2)
-        if (!targets2.items) {
-          targets2.items = []
-        }
         targets2.items.push({name:value,debug:'',release:'',cwd:'',kill:[],envs:[]})
         targets2.selected = targets2.items.length - 1
         this.setState({targets2})
@@ -557,11 +551,13 @@ class App extends Component {
       onRemove: (selected) => {
         let targets2 = this.state.targets2
         targets2.items.splice(selected,1)
+        targets2.selected = targets2.items.length - 1
         this.setState({targets2})
       }
     }
 
     let commands = {
+      title: <h3>commands</h3>,
       items: this.state.commands2 ? this.state.commands2.items : [],
       selected: this.state.commands2 ? this.state.commands2.selected : 0,
       editor: (item) => {
@@ -572,13 +568,10 @@ class App extends Component {
         let labels = ['name','cmd']
         let items = labels.map(name => <Input value={item[name]} onChange={value => {item[name] = value; this.setState({commands2})}}/>)
 
-        labels.push('')
-        items.push(<CheckBoxWithLabel label="task" checked={item.task} onChange={checked => { item.task = !item.task; this.setState({commands2})}} />)
-        
-        labels.push('')
-        items.push(<CheckBoxWithLabel label="shown" checked={item.shown} onChange={checked => { item.shown = !item.shown; this.setState({commands2})}} />)
+        let labels2 = ['task','shown','bookmark']
+        let items2 = labels2.map(name => <CheckBoxWithLabel label={name} checked={item[name]} onChange={checked => { item[name] = checked; this.setState({commands2})}} />)
 
-        return <TwoColumnsTable labels={labels} items={items} prefix="commands"/>
+        return <TwoColumnsTable labels={labels.concat(labels2.map(e => ''))} items={items.concat(items2)} prefix="command-input-"/>
       },
       onSelect: (selected) => {
         let commands2 = this.state.commands2
@@ -609,28 +602,17 @@ class App extends Component {
       <div className="App">
         <FlexPaneContainer>
 
-          <FlexPane title="config" mode="normal">
+          <FlexPane title="config" mode="hidden">
             <FlexPaneBar>
               <FlexPaneButtons/>
               <FlexPaneTitle/>
             </FlexPaneBar>
 
-            <div style={{display:'block'}}>
-
-            <div> envs
-              <ListEdit {...envs} >
-              </ListEdit>
+              <div className="config-wrapper">
+              <ListEdit {...envs} />
+              <ListEdit {...targets2} />              
+              <ListEdit {...commands} />
               </div>
-
-              <div> targets
-              <ListEdit {...targets2} >
-                
-              </ListEdit>
-
-              commands
-              <ListEdit {...commands} >
-
-              </ListEdit>
 
               <button onClick={()=>{
                   let data = {envs:this.state.envs,targets:this.state.targets2,commands:this.state.commands2}
@@ -639,10 +621,6 @@ class App extends Component {
                   this.emit('mtime')
                 }} >save</button>
 
-              </div>
-
-            </div>
-
           </FlexPane>
 
           <FlexPane title="targets">
@@ -650,7 +628,7 @@ class App extends Component {
                 <FlexPaneButtons/>
                 <FlexPaneTitle/>
                 <MenuItem>
-                  <CheckBoxWithLabel label="active" checked={this.state.isActive} onChange={this.handleActiveChange} />
+                  <CheckBoxWithLabel label="active" checked={this.state.active} onChange={this.handleActiveChange} />
                 </MenuItem>
                 <MenuItem>
                   {this.renderEnvSelect()}

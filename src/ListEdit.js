@@ -12,22 +12,38 @@ export default class ListEdit extends Component {
     }
     render() {
       let props = this.props
-      let {items,selected,editor,onSelect, onAdd, onRemove} = props
-      let items_ = items ? items.map((item,i) => <div key={i} className={classNames("list-item",{"list-item-selected":selected === i})} onClick={()=>onSelect(i)}>{item.name}</div>) : null
-      let editor_ = (items && items.length > 0) ? editor(items[selected]) : null
+      let {items,selected,editor,onSelect,onAdd,onRemove} = props
+      let items_ = items ? items.map((item,i) => {
+        let className = classNames("list-edit-item",{"list-edit-item-selected":selected === i})
+        let removeButton = selected === i ? <button className="list-edit-remove-button" onClick={() => onRemove(selected)} >remove</button> : null
+        return <div key={i} className={className} onClick={() => onSelect(i)}>{item.name}{removeButton}</div>
+      }) : null
+      let editor_ = (items && items[selected]) ? editor(items[selected]) : null
       
       /*if (items && items.length > 0) {
         console.log(items[selected])
       }*/
 
-      return (<React.Fragment>
-              <div className="list-edit-items"  >{items_}</div>
-              <Input value={this.state.value} onChange={(value)=>{this.setState({value})}}/>
-              <button onClick={()=>{onAdd(this.state.value);this.setState({value:''})}}>add</button>
-              <button onClick={()=>{if (items && items.length > selected) {onRemove(selected)}}} >remove</button>
+      let onAddClick = () => {
+        onAdd(this.state.value)
+        this.setState({value:''})
+      }
+
+      let onInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+          onAddClick()
+        }
+      }
+
+      return (<div className="list-edit-wrapper">
+              {this.props.title}
+              <div className="list-edit-items">{items_}</div>
+              <div className="list-edit-add-button-wrap">
+                <Input value={this.state.value} onChange={(value)=>{this.setState({value})}} onKeyDown={onInputKeyDown} />
+                <button className="list-item-add-button" onClick={onAddClick}>add</button>  
+              </div> 
               <div className="list-edit-editor">{editor_}</div>
-              {props.children}
-              </React.Fragment>)
+              </div>)
     }
   }
   

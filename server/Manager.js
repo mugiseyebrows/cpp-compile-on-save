@@ -49,11 +49,11 @@ class Manager {
         return this._mode
     }
 
-    setMode(mode) {
+    set mode(mode) {
         this._mode = mode
     }
 
-    setActive(active) {
+    set active(active) {
         this._active = active
     }
 
@@ -61,7 +61,7 @@ class Manager {
         return this._active
     }
 
-    update(config) {
+    set config(config) {
 
         this._taskQueue.config = config
 

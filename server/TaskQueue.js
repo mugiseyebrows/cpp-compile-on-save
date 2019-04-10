@@ -3,22 +3,28 @@
 const debug = require('debug')('cpp-compile-on-save')
 const fkill = require('fkill')
 const {spawn} = require('child_process')
+const path = require('path')
+const fs = require('fs')
 
 const EventEmitter = require('events');
 
 const StdStreamCacher = require('./StdStreamCacher')
 
-function addKillTasksMaybe(taskQueue, stderrText, task) {
-    var lines = stderrText.split('\r\n')
-    var cannotOpen = lines.filter(line => line.indexOf('cannot open output') > -1 || line.indexOf('Permission denied') > -1)
-    if (cannotOpen.length > 0 ) {
-        debug('cannot open output => need to kill some tasks')
-        if (task.kill != null && task.kill.length > 0) {
-            taskQueue.add({cmd:'make',cwd:task.cwd,mode:task.mode,name:task.name},true)
-            task.kill.forEach( kill => taskQueue.add({cmd:'kill',proc:kill},true))
-        } else {
-            debug('task.kill is null or empty',task,task.kill)
-        }
+class Killer {
+    listen(proc, task, add) {
+        proc.stderr.on('data',(data) => {
+            if (task.kill.length === 0) {
+                return
+            }
+            let lines = data.toString().split('\n')
+            let cannotOpen = lines.filter(line => line.indexOf('cannot open output') > -1 || line.indexOf('Permission denied') > -1)
+            if (cannotOpen.length === 0) {
+                return
+            }
+            let kill = task.kill.split(' ').filter(e => e.length)
+            add(task,true)
+            kill.forEach(name => add({cmd:'kill',proc:name}, true))
+        })
     }
 }
 
@@ -35,9 +41,9 @@ class TaskQueue extends EventEmitter {
         this.handle = null
         this.makeStat = makeStat
         this.trafficLights = trafficLights
-        this.config = config
+        this._config = config
         this.running = null
-
+        this._killer = new Killer()
         let cacher = new StdStreamCacher()
         cacher.chans.forEach(chan => {
             cacher.on(chan,(data)=>{
@@ -58,14 +64,6 @@ class TaskQueue extends EventEmitter {
     emitMakeStat() {
         this.emit('make-stat',this.makeStat.stat)
     }
-
-    /*emit(type,data) {
-        //debug('emit',type)
-        if (this.socket === null) {
-            return;
-        }
-        this.socket.emit(type,data)
-    }*/
 
     hasTask(newTask) {
         if (newTask.cwd === undefined) {
@@ -92,7 +90,7 @@ class TaskQueue extends EventEmitter {
 
         let command = commands.items.find(c => c.name == cmd)
         if (!command) {
-            return
+            return {}
         }
         
         let cmd_ = command.cmd
@@ -128,9 +126,8 @@ class TaskQueue extends EventEmitter {
         return command*/
     }
 
-    set config(config) {
-        console.log('set config',config)
-        this._config = config
+    set config(value) {
+        this._config = value
     }
 
     add(newTask, front, target) {
@@ -196,6 +193,10 @@ class TaskQueue extends EventEmitter {
                
                 this.proc = spawn(cmd, args, {cwd:cwd})
 
+                this._killer.listen(this.proc, task, (...args) => {
+                    this.add(...args)
+                })
+
                 this.emit('proc-start', {cwd:task.cwd, mode:task.mode, cmd:task.cmd})
 
                 this.trafficLights.blue()
@@ -211,9 +212,6 @@ class TaskQueue extends EventEmitter {
                     this.emitMakeStat()
                 }
 
-                this.proc.stderr.on('data',(data)=>{
-                    addKillTasksMaybe(this,data.toString(),task)
-                })
 
                 this.proc.on('exit',(code)=>{
                     t = +new Date() - t

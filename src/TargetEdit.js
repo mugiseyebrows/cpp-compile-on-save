@@ -19,7 +19,7 @@ export default class TargetEdit extends Component {
     render() {
         let item = this.props.item
 
-        let header = ['name','debug','release','cwd']
+        let header = ['name','debug','release','cwd','kill']
 
         let inputs = header.map((p,i) => { 
             return <Input key={i} value={item[p]} onChange={(value) => this.props.onChange(p,value)} />
@@ -40,9 +40,9 @@ export default class TargetEdit extends Component {
             this.props.onChange('envs',checked)
         }
 
-        inputs.push(<CheckBoxList items={envNames} checked={isArray(item.envs) ? item.envs : []} onChange={onCheckBoxChange}/>)
+        inputs.push(<div className="target-edit-envs"><CheckBoxList items={envNames} checked={isArray(item.envs) ? item.envs : []} onChange={onCheckBoxChange}/></div>)
         header.push('envs')
 
-        return <TwoColumnTable items={inputs} labels={header} prefix="target-edit-"/>
+        return <TwoColumnTable items={inputs} labels={header} prefix="target-input-"/>
     }
 }

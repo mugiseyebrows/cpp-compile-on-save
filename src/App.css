@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -197,10 +201,58 @@ select.mode {
   height: 20px;
 }
 
-.list-item {
-  cursor: pointer;
+.list-edit-wrapper {
+  flex-grow: 1;
+  padding: 5px;
 }
 
-.list-item-selected {
+.list-edit-item {
+  cursor: pointer;
+  height: 30px;
+}
+
+.list-edit-item-selected {
   font-weight: bold;
+}
+
+.list-edit-remove-button {
+  float: right;
+  height: 30px;
+}
+
+.config-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  /*justify-content: space-between;*/
+  flex-direction: row;
+  flex-grow: 1;
+}
+
+.config-wrapper th {
+  text-align: left;
+}
+
+.config-wrapper table, .config-wrapper table td, .config-wrapper table td input[type="text"] {
+  width: 100%;
+}
+
+.config-wrapper td {
+  display:block; box-sizing:border-box; clear:both;
+}
+
+.list-edit-add-button-wrap {
+  display: flex;
+}
+
+.list-edit-add-button-wrap input {
+  flex-grow: 1;
+}
+
+.target-edit-envs {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.target-edit-envs {
+  max-width: 20vw;
 }
