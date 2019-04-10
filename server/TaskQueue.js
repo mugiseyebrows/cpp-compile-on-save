@@ -3,48 +3,10 @@
 const debug = require('debug')('cpp-compile-on-save')
 const fkill = require('fkill')
 const {spawn} = require('child_process')
-const {configCmdArgs} = require('./Utils')
+
 const EventEmitter = require('events');
 
-class StdStreamCacher extends EventEmitter {
-    constructor() {
-        super()
-        this._chans = ['stdout','stderr']
-        this.data = {}
-        this._chans.forEach(chan => {
-            this.data[chan] = {}
-        })
-        this.handle = setInterval(()=>{
-            this.flush()
-        },1000)
-    }
-
-    get chans() {
-        return this._chans
-    }
-
-    listen(proc, cwd) {
-        this._chans.forEach(chan => {
-            proc[chan].on('data', data => {
-                let text = data.toString()
-                this.data[chan][cwd] = (this.data[chan][cwd] || '') + text
-            })
-        })
-    }
-
-    flush() {
-        this._chans.forEach(chan => {
-            for(let cwd in this.data[chan]) {
-                let data = this.data[chan][cwd]
-                if (data !== '' && data !== undefined) {
-                    //debug('socket.emit',cwd)
-                    this.emit(chan,{data,cwd})
-                    delete this.data[chan][cwd] 
-                }
-            }
-        })
-    }
-}
+const StdStreamCacher = require('./StdStreamCacher')
 
 function addKillTasksMaybe(taskQueue, stderrText, task) {
     var lines = stderrText.split('\r\n')
@@ -58,6 +20,10 @@ function addKillTasksMaybe(taskQueue, stderrText, task) {
             debug('task.kill is null or empty',task,task.kill)
         }
     }
+}
+
+function clone(obj) {
+    return Object.assign({},obj)
 }
 
 class TaskQueue extends EventEmitter {
@@ -82,7 +48,7 @@ class TaskQueue extends EventEmitter {
     }
 
     eventNames() {
-        return ['tasks','make-stat','proc-start','proc-exit'].concat(this._cacher.chans)
+        return ['tasks','make-stat','proc-start','proc-exit','binary-changed'].concat(this._cacher.chans)
     }
 
     emitTasks() {
@@ -118,6 +84,53 @@ class TaskQueue extends EventEmitter {
         if (this.proc) {
             this.proc.kill()
         }
+    }
+
+    makeCommand(cmd, target, mode, cwd, file) {
+
+        let commands = this._config.commands
+
+        let command = commands.items.find(c => c.name == cmd)
+        if (!command) {
+            return
+        }
+        
+        let cmd_ = command.cmd
+
+        if (cmd_.indexOf('$pro') > -1) {
+            cmd_ = cmd_.replace('$pro',target.pro || path.join(cwd, fs.readdirSync(cwd).find(name => name.endsWith('.pro'))))
+        }
+        cmd_ = cmd_.replace('$cwd',cwd)
+        cmd_ = cmd_.replace('$mode',mode)
+
+        if (file) {
+            cmd_ = cmd_.replace('$file',file)
+        }
+
+        cmd_ = cmd_.split(' ')
+
+        debug(cmd_)
+        
+        return {cmd:cmd_[0], args:cmd_.slice(1),task:command.task}
+
+        /*var repl = {
+            '$mode': mode,
+            '$cwd': cwd
+        }
+        if (target != null) {
+            repl['$pro'] = target.pro || path.join(cwd, fs.readdirSync(cwd).find(name => name.endsWith('.pro')))
+        } else {
+            
+        }
+        let [cmd, args] = toCmdArgs(cmd_, args_, repl)
+        return {cmd:cmd, args:args}
+
+        return command*/
+    }
+
+    set config(config) {
+        console.log('set config',config)
+        this._config = config
     }
 
     add(newTask, front, target) {
@@ -177,7 +190,9 @@ class TaskQueue extends EventEmitter {
 
                 var t = +new Date()
                 
-                let {cmd,args} = configCmdArgs(this.config, task.cmd, target, task.mode, cwd)
+                let {cmd,args} = this.makeCommand(task.cmd, target, task.mode, cwd)
+
+                //console.log('cmd,args',cmd,args)
                
                 this.proc = spawn(cmd, args, {cwd:cwd})
 

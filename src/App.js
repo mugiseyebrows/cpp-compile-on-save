@@ -255,11 +255,11 @@ class App extends Component {
     this.setState({modeSelect:!this.state.modeSelect})
   }
 
-  handleEditOrSelectTargets = (name) => {
+  /*handleEditOrSelectTargets = (name) => {
     if (name === 'edit') {
       this.emit('edit-targets')
     }
-  }
+  }*/
 
   handleMakeAll = (mode) => {
     /*this.state.targets
@@ -281,13 +281,7 @@ class App extends Component {
     this.emit('project-command',{command:command, target:target, mode: mode})
   }
 
-  handleOpenFile = (args) => {
-    //console.log('handleOpenFile', cwd, path, lineNum)
-    this.emit('open-file',args)
-  }
-
   handleClean = (subj) => {
-
     let clean = (key) => {
       let value = this.state.tasks.running ? this.state[key].slice(-1) : []
       if (value.length > 0) {
@@ -295,7 +289,7 @@ class App extends Component {
       }
       this.setState({[key]:value})
     }
-
+    
     var x = {
       'errors': () => clean('errors'),
       'stdout': () => clean('stdout'),
@@ -371,7 +365,7 @@ class App extends Component {
       }
     }
 
-    let checked = this.state.targetsVisibility[target.name]
+    //let checked = this.state.targetsVisibility[target.name]
     
     
     let currentEnvName = this.currentEnv().name
@@ -397,7 +391,6 @@ class App extends Component {
     
     return (<tr key={i} className={rowClasses}>
           <td>
-            <CheckBoxWithLabel className={classNames("target-show-hide",{"hidden":!modeSelect})} onChange={() => this.toggleVisibility(target)} checked={checked} />
             <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
           </td>
           <td>{made}</td>
@@ -437,7 +430,7 @@ class App extends Component {
     }
 
     var modeSelect = this.state.modeSelect
-    var targetsHeader = <tr><th> <MugiMenu items={modeSelect ? ['name','all','none'] : ['name']} onItemClick={(name)=>{this.handleModeSelect(name)}}/> </th><th>made</th><th>make</th><th>make time</th></tr>
+    var targetsHeader = <tr><th>name</th><th>made</th><th>make</th><th>make time</th></tr>
     
     var targetsBody = items.map((target,i) => this.renderTarget(target,i))
     return (<table className="targets">
@@ -553,7 +546,7 @@ class App extends Component {
         this.setState({targets2})
       },
       onAdd: (value) => {
-        let targets2 = this.state.targets2 || {}
+        let targets2 = Object.assign({},{items:[],selected:0},this.state.targets2)
         if (!targets2.items) {
           targets2.items = []
         }
@@ -569,8 +562,8 @@ class App extends Component {
     }
 
     let commands = {
-      items: this.state.commands2.items,
-      selected: this.state.commands2.selected,
+      items: this.state.commands2 ? this.state.commands2.items : [],
+      selected: this.state.commands2 ? this.state.commands2.selected : 0,
       editor: (item) => {
 
         //console.log('editor(item)', item)
@@ -593,9 +586,10 @@ class App extends Component {
         this.setState({commands2})
       },
       onAdd: (value) => {
+        let commands2 = Object.assign({},{items:[],selected:0},this.state.commands2)
         let item = {name: value, task: false, shown: false, cmd: ''}
-        let commands2 = this.state.commands2
         commands2.items.push(item)
+        commands2.selected = commands2.items.length - 1
         this.setState({commands2})
       },
       onRemove: (selected) => {
@@ -607,6 +601,9 @@ class App extends Component {
 
     //targets = null
 
+    let handleEditFile = (args) => {
+      this.emit('edit-file',args)
+    }
     
     return (
       <div className="App">
@@ -688,7 +685,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MugiMenu items={['clean']} onItemClick={() => this.handleClean('errors')}/>
             </FlexPaneBar>
-            <StdOutputs data={this.state.errors} onAnchor={this.handleOpenFile} showEmpty={false}/>
+            <StdOutputs data={this.state.errors} onAnchor={handleEditFile} showEmpty={false}/>
           </FlexPane>
           <FlexPane title="stdout" refPane={this.refStdout} className="stdout">
             <FlexPaneBar>
@@ -696,7 +693,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stdout')}/>
             </FlexPaneBar>
-            <StdOutputs data={this.state.stdout} onAnchor={this.handleOpenFile}/>
+            <StdOutputs data={this.state.stdout} onAnchor={handleEditFile}/>
           </FlexPane>
           <FlexPane title="stderr" refPane={this.refStderr} className="stderr">
             <FlexPaneBar>
@@ -704,7 +701,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stderr')}/>
             </FlexPaneBar>
-            <StdOutputs data={this.state.stderr} onAnchor={this.handleOpenFile}/>
+            <StdOutputs data={this.state.stderr} onAnchor={handleEditFile}/>
           </FlexPane>
         </FlexPaneContainer>
       </div>

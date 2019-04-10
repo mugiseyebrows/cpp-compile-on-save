@@ -4,7 +4,6 @@ const path = require('path')
 const app = express()
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
-const chokidar = require('chokidar')
 
 /* 
 set DEBUG=cpp-compile-on-save
@@ -17,7 +16,7 @@ const fs = require('fs')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {copyExampleMaybe, toCmdArgs, configCmdArgs, spawnDetached, getMtime2, readJson, writeJson} = require('./Utils')
+const {copyExampleMaybe, spawnDetached, getMtime2, readJson, writeJson} = require('./Utils')
 const Manager = require('./Manager')
 
 var port = 4000;
@@ -77,6 +76,7 @@ manager.setMode('debug')
 manager.setActive(true)
 manager.update(config2)
 
+
 /*
 roots.forEach(root => {
     if (process.platform === 'win32') {
@@ -118,13 +118,13 @@ io.on('connection', (socket) => {
     })
 
     socket.on('open-bookmark', bookmark => {
-        let {cmd, args} = configCmdArgs(config, bookmark.name, null, manager.mode, __dirname)
+        /*let {cmd, args} = configCmdArgs(config, bookmark.name, null, manager.mode, __dirname)
         debug('open-bookmark',cmd,args)
-        spawnDetached(cmd, args)
+        spawnDetached(cmd, args)*/
     })
 
 
-    socket.on('open-file', obj => {
+    socket.on('edit-file', obj => {
 
         let {cwd,lineNum} = obj
         let path_ = obj.path
@@ -139,9 +139,16 @@ io.on('connection', (socket) => {
         /*if (obj.colNum !== null) {
             path_ = path_ + ':' + obj.colNum
         }*/
-        let [cmd, args] = toCmdArgs(config.editor, [path_])
-        debug(obj, cmd, args)
-        spawnDetached(cmd, args)
+        //let [cmd, args] = toCmdArgs(config.editor, [path_])
+
+        let {cmd, args} = taskQueue.makeCommand('edit-file',null,null,cwd,path_)
+
+        if (cmd) {
+            spawnDetached(cmd, args)
+        } else {
+            debug(`edit-file not found in config`)
+        }
+
     })
 
     socket.on('set-active', value=>{
@@ -177,12 +184,12 @@ io.on('connection', (socket) => {
         taskQueue.abort()
     })
 
-    socket.on('edit-targets',()=>{
+    /*socket.on('edit-targets',()=>{
         debug('edit-targets')
         let targets = path.join(__dirname,'targets.json')
         let [cmd, args] = toCmdArgs(config.configEditor, [targets])
         spawnDetached(cmd, args)
-    })
+    })*/
 
     socket.on('commands',()=>{
         socket.emit('commands',config.commands)
@@ -194,7 +201,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('set-config',(config) => {
-        debug('set-config',config)
+        //debug('set-config',config)
         writeJson(config2Path,config)
         config2 = config
         manager.update(config2)
@@ -210,7 +217,7 @@ io.on('connection', (socket) => {
         
         debug('project-command', opts.command, target.name, mode)
 
-        var command_ = [...config.commands.shown, ...config.commands.hidden].filter( c => c.name == command )
+        /*var command_ = [...config.commands.shown, ...config.commands.hidden].filter( c => c.name == command )
 
         if (command_.length == 1) {
             command_ = command_[0]
@@ -222,17 +229,29 @@ io.on('connection', (socket) => {
             } else {
                 debug('unknown command',command)
             }
+        }*/
+
+        let command_ = config2.commands.items.find(c => c.name == command)
+
+        if (!command_) {
+            debug(`${command} not found in config`)
+            return
         }
 
         if (command_.task === true) {
-            var task = {cmd:command, mode:mode, cwd:target.cwd, name: target.name}
+            var task = {cmd:command, mode, cwd:target.cwd, name: target.name}
             if (command == 'make') {
                 task['kill'] = target.kill
             }
             taskQueue.add(task,false,target)
         } else {
-            let {cmd, args} = configCmdArgs(config, command, target, mode, target.cwd)
-            spawnDetached(cmd, args, {cwd:target.cwd})
+            let {cmd, args} = taskQueue.makeCommand(command, target, mode, target.cwd)
+
+            if (cmd) {
+                spawnDetached(cmd, args, {cwd:target.cwd})
+            } else {
+                debug(`${command} not found in config`)
+            }
         }
        
         

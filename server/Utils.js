@@ -105,6 +105,7 @@ function copyExampleMaybe(name) {
     }
 }
 
+/*
 function configCmdArgs(config, command, target, mode, cwd) {
     let [cmd_, args_] = [config.commands.shown, config.commands.hidden, config.bookmarks].map( e => e.find(c => c.name === command) ).find( e => e != null ).cmd
     var repl = {
@@ -138,6 +139,7 @@ function toCmdArgs(exp, args2, repl) {
     })
     return [cmd,args]
 }
+*/
 
 function spawnDetached(cmd,args,opts) {
     args = args || []
@@ -246,6 +248,7 @@ function getMtime2(targets2) {
         }
         modes.forEach(mode => {
             let p = target[mode]
+            //console.log('getMtime2',mode,p)
             if (p.length > 0 && fs.existsSync(p)) {
                 mtime[target.name][mode] = fs.statSync(p).mtime
             }
@@ -265,8 +268,8 @@ function writeJson(name,obj) {
 }
 
 module.exports = {isPathContains, findRoots, findTarget, 
-    copyExampleMaybe, toCmdArgs, spawnDetached, 
-    guessPro, readJson, writeJson, getMtime, configCmdArgs,
+    copyExampleMaybe, spawnDetached, 
+    guessPro, readJson, writeJson, getMtime,
     findTargets, findRoots2, sortedPaths, pathDepth, findTarget2, getMtime2
 }
 

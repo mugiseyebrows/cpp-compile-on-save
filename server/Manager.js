@@ -63,11 +63,10 @@ class Manager {
 
     update(config) {
 
-        //return
+        this._taskQueue.config = config
 
         this._config = config
         
-
         let roots = findRoots2(config.targets.items.map(item => item.cwd))
 
         //console.log('roots',roots)
