@@ -13,7 +13,7 @@ const StdStreamCacher = require('./StdStreamCacher')
 class Killer {
     listen(proc, task, add) {
         proc.stderr.on('data',(data) => {
-            if (task.kill.length === 0) {
+            if (!task.kill || task.kill.length === 0) {
                 return
             }
             let lines = data.toString().split('\n')
@@ -28,8 +28,13 @@ class Killer {
     }
 }
 
+/*
 function clone(obj) {
     return Object.assign({},obj)
+}
+*/
+function defaults(...objs) {
+    return Object.assign({},...objs)
 }
 
 class TaskQueue extends EventEmitter {
@@ -84,7 +89,7 @@ class TaskQueue extends EventEmitter {
         }
     }
 
-    makeCommand(cmd, target, mode, cwd, file) {
+    makeCommand(cmd, target, mode, cwd, file, envPath) {
 
         let commands = this._config.commands
 
@@ -105,11 +110,22 @@ class TaskQueue extends EventEmitter {
             cmd_ = cmd_.replace('$file',file)
         }
 
+        if (target) {
+            cmd_ = cmd_.replace('$debug',target.debug)
+            cmd_ = cmd_.replace('$release',target.release)
+        }
+
         cmd_ = cmd_.split(' ')
 
         debug(cmd_)
+
+        let env
+        if (envPath && envPath.length > 0) {
+            env = defaults(process.env, {Path: envPath, PATH: envPath})
+            //debug('env',env)
+        }
         
-        return {cmd:cmd_[0], args:cmd_.slice(1),task:command.task}
+        return {cmd:cmd_[0], args:cmd_.slice(1), env}
 
         /*var repl = {
             '$mode': mode,
@@ -130,10 +146,21 @@ class TaskQueue extends EventEmitter {
         this._config = value
     }
 
+    set env(env) {
+        //debug('taskQueue env',env)
+        this._env = env
+    }
+
+    get env() {
+        return this._env
+    }
+
     add(newTask, front, target) {
 
         if (newTask != null) {
             if (!this.hasTask(newTask)) {
+
+                newTask.env = this._env
                 debug(`adding to tasklist`,newTask)
                 if (front == true) {
                     this.tasks = [newTask,...this.tasks]
@@ -187,12 +214,18 @@ class TaskQueue extends EventEmitter {
 
                 var t = +new Date()
                 
-                let {cmd,args} = this.makeCommand(task.cmd, target, task.mode, cwd)
+                let {cmd,args,env} = this.makeCommand(task.cmd, target, task.mode, cwd, null, this._env.path)
 
                 //console.log('cmd,args',cmd,args)
-               
-                this.proc = spawn(cmd, args, {cwd:cwd})
 
+
+                try {
+                    this.proc = spawn(cmd, args, {cwd,env})
+                } catch (e) {
+                    debug(`failed to spawn`,cmd,args)
+                    return
+                }
+                
                 this._killer.listen(this.proc, task, (...args) => {
                     this.add(...args)
                 })

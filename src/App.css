@@ -208,7 +208,7 @@ select.mode {
 
 .list-edit-item {
   cursor: pointer;
-  height: 30px;
+  height: 20px;
 }
 
 .list-edit-item-selected {
@@ -217,7 +217,7 @@ select.mode {
 
 .list-edit-remove-button {
   float: right;
-  height: 30px;
+  height: 20px;
 }
 
 .config-wrapper {

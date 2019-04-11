@@ -47,7 +47,6 @@ class App extends Component {
       stdout: [],
       stderr: [],
       errors: [],
-      //targets: [],
       tasks: {queued:[], running:null},
       active: false,
       mode: 'debug',
@@ -143,17 +142,6 @@ class App extends Component {
       socket.emit('targets')
     })
 
-    socket.on('targets',(targets) => {
-      if (this.state.targets.length === 0) {
-        var targetsVisibility = {}
-        targets.forEach(target => {
-          targetsVisibility[target.name] = true
-        })
-        this.setState({targetsVisibility:targetsVisibility})
-      }
-      this.setState({targets:targets})
-    })
-
     socket.on('tasks',(tasks) => {
       this.setState({tasks:tasks})
     })
@@ -177,7 +165,7 @@ class App extends Component {
       this.setState({bookmarks:bookmarks})
     })
     
-    socket.on('is-active', (active) => {
+    socket.on('active', (active) => {
       this.setState({active})
     })
 
@@ -186,16 +174,13 @@ class App extends Component {
       this.setState({mode:mode})
     })
 
-    socket.on('commands', commands => {
-      this.setState({commands:commands})
-    })
-
     socket.on('config',(config)=>{
       this.setState({envs:config.envs, targets2:config.targets, commands2: config.commands})
+      this.emitSetEnv()
       this.updateMade()
     })
 
-    var reqs = ['targets','mtime','bookmarks','is-active','get-mode','commands','make-stat','config']
+    var reqs = ['targets','mtime','bookmarks','active','mode','make-stat','config']
 
     reqs.forEach(req => this.emit(req))
 
@@ -211,8 +196,6 @@ class App extends Component {
 
   updateMade = () => {
     
-    //console.log('updateMade')
-
     var made = {}
     var mtime = this.state.mtime
     var modes = ['debug','release']
@@ -249,7 +232,7 @@ class App extends Component {
       .filter((target) => this.state.targetsVisibility[target.name])
       .forEach(target => this.handleProjectCommand('make', target, mode))*/
 
-      let envName = this.currentEnv().name
+      let envName = this.currentEnvName()
       this.state.targets2.items
         .filter( target => target.envs.indexOf(envName) > -1 )
         .forEach( target => this.handleProjectCommand('make',target, mode) )
@@ -336,7 +319,6 @@ class App extends Component {
   renderTarget = (target,i) => {
 
     let mode = this.state.mode
-    let modeSelect = this.state.modeSelect
 
     let makeCode = null
     let makeTime = null
@@ -404,7 +386,7 @@ class App extends Component {
 
 
   activeTargets() {
-    let currentEnvName = this.currentEnv().name
+    let currentEnvName = this.currentEnvName()
     return this.state.targets2.items.filter(target => target.envs.indexOf(currentEnvName) > -1)
   }
 
@@ -417,7 +399,6 @@ class App extends Component {
       return
     }
 
-    var modeSelect = this.state.modeSelect
     var targetsHeader = <tr><th>name</th><th>made</th><th>make</th><th>make time</th></tr>
     
     var targetsBody = items.map((target,i) => this.renderTarget(target,i))
@@ -435,7 +416,10 @@ class App extends Component {
       return null
     }
 
-    let renderTask = (task,i,running) => <li key={i} className={classNames({"task-running": running})} >{task.cmd} {task.mode} @ {task.cwd}</li>
+    let renderTask = (task,i,running) => {
+      let caption = task.cmd === 'kill' ? `${task.cmd} ${task.proc}` : `${task.cmd} ${task.mode} @ ${task.cwd}`
+      return <li key={i} className={classNames({"task-running": running})}>{caption}</li>
+    }
 
     return (<ul className="tasks">
               {running ? renderTask(running,-1,true) : null}
@@ -461,6 +445,7 @@ class App extends Component {
         let index = envs.items.map(env => env.name).indexOf(value)
         envs.selected = index
         this.setState({envs})
+        this.emitSetEnv()
     }
 
     if (this.state.envs.items.length === 0) {
@@ -476,6 +461,10 @@ class App extends Component {
     return <Select className="env" options={options} onChange={onChange} selected={selected} />
   }
 
+  emitSetEnv() {
+    let envs = this.state.envs
+    this.emit('set-env',envs.items[envs.selected])
+  }
 
   render() {
 
@@ -508,6 +497,7 @@ class App extends Component {
         let envs = this.state.envs
         envs.selected = selected
         this.setState({envs})
+        this.emitSetEnv()
       },
       onAdd: (value) => {
         let envs = this.state.envs
@@ -515,6 +505,7 @@ class App extends Component {
         items.push({name:value,path:''})
         envs.selected = envs.items.length - 1
         this.setState({envs})
+        this.emitSetEnv()
       },
       onRemove: (selected) => {
         let envs = this.state.envs
@@ -522,6 +513,7 @@ class App extends Component {
         items.splice(selected,1)
         envs.selected = envs.items.length - 1
         this.setState({envs})
+        this.emitSetEnv()
       },
     }
 

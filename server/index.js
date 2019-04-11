@@ -59,6 +59,7 @@ var manager = new Manager(taskQueue)
 manager.mode = 'debug'
 manager.active = true
 manager.config = config2
+manager.env = config2.envs.items[config2.envs.selected]
 
 io.on('connection', (socket) => {
     debug('io connection')
@@ -122,8 +123,8 @@ io.on('connection', (socket) => {
         manager.active = value
     })
 
-    socket.on('is-active',()=>{
-        socket.emit('is-active',manager.active)
+    socket.on('active',()=>{
+        socket.emit('active',manager.active)
     })
 
     socket.on('set-mode', mode => {
@@ -132,9 +133,9 @@ io.on('connection', (socket) => {
         socket.emit('get-mode',manager.mode)
     })
 
-    socket.on('get-mode', () => {
-        debug('get-mode', manager.mode)
-        socket.emit('get-mode', manager.mode)
+    socket.on('mode', () => {
+        debug('mode', manager.mode)
+        socket.emit('mode', manager.mode)
     })
 
     socket.on('cancel', () => {
@@ -147,16 +148,9 @@ io.on('connection', (socket) => {
         taskQueue.abort()
     })
 
-    /*socket.on('edit-targets',()=>{
-        debug('edit-targets')
-        let targets = path.join(__dirname,'targets.json')
-        let [cmd, args] = toCmdArgs(config.configEditor, [targets])
-        spawnDetached(cmd, args)
-    })*/
-
-    socket.on('commands',()=>{
+    /*socket.on('commands',()=>{
         socket.emit('commands',config.commands)
-    })
+    })*/
 
     socket.on('make-stat',()=>{
         debug('make-stat')
@@ -164,10 +158,14 @@ io.on('connection', (socket) => {
     })
 
     socket.on('set-config',(config) => {
-        
         writeJson(config2Path,config)
         config2 = config
         manager.config = config2
+    })
+
+    socket.on('set-env',(env) => {
+        debug('set-env',env)
+        manager.env = env
     })
 
     socket.on('config',()=>{
@@ -194,10 +192,10 @@ io.on('connection', (socket) => {
             }
             taskQueue.add(task,false,target)
         } else {
-            let {cmd, args} = taskQueue.makeCommand(command, target, mode, target.cwd)
+            let {cmd, args, env} = taskQueue.makeCommand(command, target, mode, target.cwd, null, taskQueue.env.path)
 
             if (cmd) {
-                spawnDetached(cmd, args, {cwd:target.cwd})
+                spawnDetached(cmd, args, {cwd:target.cwd,env})
             } else {
                 debug(`${command} not found in config`)
             }
