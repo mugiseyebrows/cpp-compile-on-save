@@ -61,6 +61,10 @@ class Manager {
         return this._active
     }
 
+    get env() {
+        return this._env
+    }
+
     set env(env) {
         this._env = env
         this._taskQueue.env = env

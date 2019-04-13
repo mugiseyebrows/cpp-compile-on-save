@@ -73,11 +73,13 @@ function findTarget2(config,p) {
 }
 
 
-
 function spawnDetached(cmd,args,opts) {
     args = args || []
-    opts = Object.assign({},opts,{detached: true, stdio: 'ignore'})
-    //debug('spawnDetached',cmd,args,opts)
+
+    opts = defaults(opts, {detached: true, stdio: 'ignore'})
+    //debug('spawnDetached', cmd, args)
+    //debug('opts.env.PATH',opts.env.PATH)
+
     let child = spawn(cmd,args,opts)
     child.unref()
 }
@@ -112,7 +114,11 @@ function writeJson(name,obj) {
     return fse.writeJSONSync(name,obj,{spaces:1})
 }
 
+function defaults(...objs) {
+    return Object.assign({},...objs)
+}
+
 module.exports = {isPathContains, spawnDetached, 
     readJson, writeJson, findRoots2, 
-    findTarget2, getMtime2
+    findTarget2, getMtime2, defaults
 }

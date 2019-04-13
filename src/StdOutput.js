@@ -6,6 +6,7 @@ export default class StdOutput extends Component {
     shouldComponentUpdate(nextProps, nextState) {
       return nextProps.update !== this.props.update
     }
+    
     render() {
       let props = this.props
       let {lines, showEmpty, key_, cmd, cwd, mode} = this.props

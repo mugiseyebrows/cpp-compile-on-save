@@ -10,7 +10,7 @@ import Popup from "reactjs-popup";
 
 import Star from './star.svg'
 
-import {mtimeFromNow, putLinks} from './Utils'
+import {mtimeFromNow, putLinks, defaults} from './Utils'
 
 import StdOutputs from './StdOutputs'
 
@@ -180,6 +180,15 @@ class App extends Component {
       this.updateMade()
     })
 
+    socket.on('qt-project', target => {
+      let targets2 = this.state.targets2
+      let target_ = targets2.items.find(e => e.name === target.name)
+      for(var k in target) {
+        target_[k] = target[k]
+      }
+      this.setState({targets2})
+    })
+
     var reqs = ['targets','mtime','bookmarks','active','mode','make-stat','config']
 
     reqs.forEach(req => this.emit(req))
@@ -239,8 +248,8 @@ class App extends Component {
 
   }
 
-  handleProjectCommand = (command, target, mode) => {
-    this.emit('project-command',{command:command, target:target, mode: mode})
+  handleProjectCommand = (name, target, mode) => {
+    this.emit('project-command',{name:name, target:target, mode: mode})
   }
 
   handleClean = (subj) => {
@@ -350,7 +359,7 @@ class App extends Component {
       made = this.state.made[target.name][mode]
     }
 
-    let notBookmarks = this.state.commands2.items.filter(item => item.bookmark === false)
+    let notBookmarks = this.state.commands2.items.filter(item => item.bookmark === false && ['edit-file','explore'].indexOf(item.name) < 0)
 
     //console.log('notBookmarks',notBookmarks)
 
@@ -481,6 +490,8 @@ class App extends Component {
 
     //targets = null
 
+    let checkbox = (item, name, update) => <CheckBoxWithLabel label={name} checked={item[name]} onChange={checked => { item[name] = checked; update(item) }}/>
+    
     let envs = {
       title: <h3>envs</h3>,
       items: this.state.envs ? this.state.envs.items : [],
@@ -490,6 +501,16 @@ class App extends Component {
        
         let labels = ['name','path']
         let items = labels.map(name => <Input value={item[name]} onChange={value => {item[name] = value; this.setState({envs})}}/>)
+
+        let selectItems = ['replace','prepend','append']
+
+        let select = <Select id="path-mode" options={selectItems} selected={item.mode || 'replace'} onChange={(value) => {
+          item.mode = value
+          this.setState({envs})
+        }}/>
+
+        labels.push('mode')
+        items.push(select)
 
         return <TwoColumnsTable labels={labels} items={items} prefix="env-input-"/>
       },
@@ -502,7 +523,7 @@ class App extends Component {
       onAdd: (value) => {
         let envs = this.state.envs
         let items = envs.items
-        items.push({name:value,path:''})
+        items.push({name:value,path:'',mode:'replace'})
         envs.selected = envs.items.length - 1
         this.setState({envs})
         this.emitSetEnv()
@@ -527,7 +548,11 @@ class App extends Component {
           item[p] = value
           this.setState({targets2})
         }
-        return <TargetEdit envs={this.state.envs} item={item} onChange={onChange}/>
+        let onQtProject = (item) => {
+          this.emit('qt-project',item)
+        }
+
+        return <TargetEdit envs={this.state.envs} item={item} onChange={onChange} onQtProject={onQtProject}/>
       },
       onSelect: (selected) => {
         let targets2 = this.state.targets2
@@ -535,8 +560,8 @@ class App extends Component {
         this.setState({targets2})
       },
       onAdd: (value) => {
-        let targets2 = Object.assign({},{items:[],selected:0},this.state.targets2)
-        targets2.items.push({name:value,debug:'',release:'',cwd:'',kill:[],envs:[]})
+        let targets2 = defaults({},{items:[],selected:0},this.state.targets2)
+        targets2.items.push({name:value,debug:'',release:'',cwd:'',pro:'',kill:'',envs:[]})
         targets2.selected = targets2.items.length - 1
         this.setState({targets2})
       },
@@ -571,8 +596,8 @@ class App extends Component {
         this.setState({commands2})
       },
       onAdd: (value) => {
-        let commands2 = Object.assign({},{items:[],selected:0},this.state.commands2)
-        let item = {name: value, task: false, shown: false, cmd: ''}
+        let commands2 = defaults({items:[],selected:0},this.state.commands2)
+        let item = {name: value, task: false, shown: false, bookmark: false, cmd: ''}
         commands2.items.push(item)
         commands2.selected = commands2.items.length - 1
         this.setState({commands2})

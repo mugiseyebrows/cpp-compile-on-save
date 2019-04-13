@@ -1,23 +1,4 @@
-import React, { Component } from 'react'
-
-/*
-export default class CheckBoxWithLabel extends Component {
-
-  render() {
-    const { label, checked, onChange, className } = this.props;
-
-    console.log('CheckBoxWithLabel',checked,onChange)
-
-    return (
-        <label className={className} ><input
-            type="checkbox"
-            value={label}
-            checked={checked}
-            onChange={(e) => {e.preventDefault(); onChange(e.target.checked)}}/>{label}</label>
-    );
-  }
-}
-*/
+import React from 'react'
 
 export default function CheckBoxWithLabel(props) {
   let onChange = (e) => {
@@ -26,8 +7,6 @@ export default function CheckBoxWithLabel(props) {
   }
   return <label key={props.key_}><input type="checkbox" name={props.name} checked={props.checked} onChange={onChange}/>{props.label}</label>
 }
-
-
 
 /*
 Checkbox.propTypes = {

@@ -82,9 +82,13 @@ io.on('connection', (socket) => {
     })
 
     socket.on('open-bookmark', name => {
-        let {cmd, args} = taskQueue.makeCommand(name)
+        debug('open-bookmark', name)
+        let {cmd, args, env} = taskQueue.makeCommand({name, env:manager.env})
+
+        //debug('open-bookmark env.PATH',env.PATH)
+
         if (cmd) {
-            spawnDetached(cmd, args)
+            spawnDetached(cmd, args, {env})
         } else {
             debug(`${name} bookmark not found`)
         }
@@ -92,14 +96,14 @@ io.on('connection', (socket) => {
 
     socket.on('edit-file', obj => {
 
-        let {cwd,lineNum} = obj
+        let {cwd,line} = obj
         let path_ = obj.path
 
         if (!path.isAbsolute(path_)) {
             path_ = path.join(cwd, path_)
         }
-        if (lineNum !== undefined) {
-            path_ = path_ + ':' + lineNum
+        if (line !== undefined) {
+            path_ = path_ + ':' + line
         }
         // qtcreator doesn't understand path:row:col format
         /*if (obj.colNum !== null) {
@@ -107,10 +111,10 @@ io.on('connection', (socket) => {
         }*/
         //let [cmd, args] = toCmdArgs(config.editor, [path_])
 
-        let {cmd, args} = taskQueue.makeCommand('edit-file',null,null,cwd,path_)
+        let {cmd, args, env} = taskQueue.makeCommand({name:'edit-file',cwd,file:path_,env:manager.env})
 
         if (cmd) {
-            spawnDetached(cmd, args)
+            spawnDetached(cmd, args, {env})
         } else {
             debug(`edit-file not found in config`)
         }
@@ -158,6 +162,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('set-config',(config) => {
+        debug('set-config')
         writeJson(config2Path,config)
         config2 = config
         manager.config = config2
@@ -172,27 +177,74 @@ io.on('connection', (socket) => {
         socket.emit('config',config2)
     })
 
+    socket.on('qt-project', item => {
+        let cwd = item.cwd
+        let name = item.name
+
+        if (cwd.length === 0) {
+            debug('qt-project cwd is empty')
+            return
+        }
+        if (name.length === 0) {
+            debug('qt-project name is empty')
+            return
+        }
+
+        let files = fs.readdirSync(cwd)
+
+        if (process.platform === 'win32') {
+
+            let modes = ['debug','release']
+            modes.forEach(mode => {
+                if (files.indexOf(mode) > -1) {
+                    if (item[mode].length === 0) {
+                        item[mode] = path.join(cwd,mode,name + '.exe')
+                    }
+                }
+            })
+            let pro = files.find(name => name.endsWith('.pro'))
+            if (pro && item.pro.length === 0) {
+                item.pro = pro
+            }
+            if (item.kill.length === 0) {
+                item.kill = name + '.exe'
+            }
+            if (item.name.length === 0) {
+                item.name = name
+            }
+
+            socket.emit('qt-project',item)
+
+        } else {
+
+        }
+
+        
+    })
+
 
     socket.on('project-command', opts => {
-        let {command, target, mode} = opts;
+        let {name, target, mode} = opts;
         
-        debug('project-command', opts.command, target.name, mode)
+        debug('project-command', opts.name, target.name, mode)
 
-        let command_ = config2.commands.items.find(c => c.name == command)
+        let command = config2.commands.items.find(c => c.name === name)
 
-        if (!command_) {
+        if (!command) {
             debug(`${command} not found in config`)
             return
         }
 
-        if (command_.task === true) {
-            var task = {cmd:command, mode, cwd:target.cwd, name: target.name}
+        if (command.task === true) {
+            var task = {cmd:name, mode, cwd:target.cwd, name: target.name}
             if (command == 'make') {
                 task['kill'] = target.kill
             }
             taskQueue.add(task,false,target)
         } else {
-            let {cmd, args, env} = taskQueue.makeCommand(command, target, mode, target.cwd, null, taskQueue.env.path)
+            let {cmd, args, env} = taskQueue.makeCommand({name, target, mode, cwd:target.cwd, env:taskQueue.env})
+
+            debug(env.PATH)
 
             if (cmd) {
                 spawnDetached(cmd, args, {cwd:target.cwd,env})

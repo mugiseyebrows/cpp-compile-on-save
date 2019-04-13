@@ -36,7 +36,7 @@ export default class Select extends Component {
         }
         return <option {...props}>{label}</option>
       })
-      return <select className={this.props.className} value={selectedValue} onChange={(e) => {e.preventDefault();this.props.onChange(e.target.value)}}>{options}</select>
+      return <select id={this.props.id} className={this.props.className} value={selectedValue} onChange={(e) => {e.preventDefault(); this.props.onChange(e.target.value)}}>{options}</select>
     }
   }
   

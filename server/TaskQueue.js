@@ -9,6 +9,7 @@ const fs = require('fs')
 const EventEmitter = require('events');
 
 const StdStreamCacher = require('./StdStreamCacher')
+const {defaults} = require('./Utils')
 
 class Killer {
     listen(proc, task, add) {
@@ -33,8 +34,12 @@ function clone(obj) {
     return Object.assign({},obj)
 }
 */
-function defaults(...objs) {
-    return Object.assign({},...objs)
+
+function findPro(cwd) {
+    let pro = fs.readdirSync(cwd).find(name => name.endsWith('.pro'))
+    if (pro) {
+        return path.join(cwd,pro)
+    }
 }
 
 class TaskQueue extends EventEmitter {
@@ -89,19 +94,36 @@ class TaskQueue extends EventEmitter {
         }
     }
 
-    makeCommand(cmd, target, mode, cwd, file, envPath) {
+    makeCommand(opts) {
+
+        let {name, target, mode, cwd, file, env} = opts
+
+        if (!cwd) {
+            if (target) {
+                cwd = target.cwd
+            }
+        }
 
         let commands = this._config.commands
 
-        let command = commands.items.find(c => c.name == cmd)
+        let command = commands.items.find(c => c.name == name)
         if (!command) {
+            debug('!command')
             return {}
         }
         
         let cmd_ = command.cmd
 
         if (cmd_.indexOf('$pro') > -1) {
-            cmd_ = cmd_.replace('$pro',target.pro || path.join(cwd, fs.readdirSync(cwd).find(name => name.endsWith('.pro'))))
+            let pro = target.pro || ''
+            if (pro.length == 0) {
+                pro = findPro(cwd)
+            }
+            if (!pro) {
+                debug(`cannot find pro in ${cwd}`)
+            } else {
+                cmd_ = cmd_.replace('$pro', pro)
+            }
         }
         cmd_ = cmd_.replace('$cwd',cwd)
         cmd_ = cmd_.replace('$mode',mode)
@@ -119,13 +141,28 @@ class TaskQueue extends EventEmitter {
 
         debug(cmd_)
 
-        let env
-        if (envPath && envPath.length > 0) {
-            env = defaults(process.env, {Path: envPath, PATH: envPath})
-            //debug('env',env)
+        let env_ = process.env
+        if (env && env.path && env.path.length > 0) {
+            let path = env.path
+            let path0 = process.env.PATH || process.env.Path || ''
+
+            let sep = process.platform === 'win32' ? ';' : ':'
+
+            if (env.mode === 'replace') {
+                
+            } else if (env.mode === 'append') {
+                path = path0 + sep + path
+            } else if (env.mode === 'prepend') {
+                path = path + sep + path0
+            } else {
+                debug('mode', env.mode, env.name)
+            }
+            env_ = defaults(env_, {PATH: path, Path: path})
         }
+
+        //debug('env.PATH',env.PATH)
         
-        return {cmd:cmd_[0], args:cmd_.slice(1), env}
+        return {cmd:cmd_[0], args:cmd_.slice(1), env:env_}
 
         /*var repl = {
             '$mode': mode,
@@ -214,10 +251,9 @@ class TaskQueue extends EventEmitter {
 
                 var t = +new Date()
                 
-                let {cmd,args,env} = this.makeCommand(task.cmd, target, task.mode, cwd, null, this._env.path)
+                let {cmd,args,env} = this.makeCommand({name:task.cmd, target, mode:task.mode, env: this._env})
 
                 //console.log('cmd,args',cmd,args)
-
 
                 try {
                     this.proc = spawn(cmd, args, {cwd,env})

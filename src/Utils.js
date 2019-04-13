@@ -35,11 +35,15 @@ export function putLinks(text, cwd) {
         lineNum = +m[1]
         colNum = +m[2]
       } 
-      res.push({t:'a',cwd,path,lineNum,colNum})
+      res.push({t:'a',cwd,path,line:lineNum,col:colNum})
       line = parts[1]
       path = findPath(line)
     }
     res.push({t:'t',v:line})
     return res
   })
+}
+
+export function defaults(...objs) {
+  return Object.assign({},...objs)
 }
