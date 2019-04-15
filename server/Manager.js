@@ -12,7 +12,30 @@ class Manager {
         this._mode = 'debug'
         this._active = false
         this._path = path.join(__dirname,'..','config.json')
-        let config = defaults({envs:{items:[{name:'default',path:'',mode:'replace'}], selected: 0},targets:{items:[], selected: 0},commands:{items:[], selected: 0},comName:'none'}, readJson(this._path))
+        let commands
+        if (process.platform === 'win32') {
+            commands = {items: [
+                {name:'make',cmd:'mingw32-make $mode',context:'target',task:true},
+                {name:'clean',cmd:'mingw32-make clean',context:'target',task:true},
+                {name:'explore',cmd:'explorer $cwd',context:'hidden',task:false},
+                {name:'edit-file',cmd:'qtcreator -client $file',context:'hidden',task:false},
+                {name:'edit',cmd:'qtcreator -client $pro',context:'target-popup',task:false},
+                {name:'qmake',cmd:'qmake',context:'target-popup',task:true},
+                {name:'code',cmd:'code -r',context:'bookmark',task:false},
+            ],selected:0}
+        } else {
+            commands = {items: [
+                {name:'make',cmd:'make',context:'target',task:true},
+                {name:'clean',cmd:'make clean',context:'target',task:true},
+                {name:'explore',cmd:'xdg-open $cwd',context:'hidden',task:false},
+                {name:'edit-file',cmd:'qtcreator -client $file',context:'hidden',task:false},
+                {name:'edit',cmd:'qtcreator -client $pro',context:'target-popup',task:false},
+                {name:'qmake',cmd:'qmake -qt=5',context:'target-popup',task:true},
+                {name:'code',cmd:'code -r',context:'bookmark',task:false},
+            ],selected:0}
+        }
+        let envs = {items:[{name:'default',path:'',mode:'replace'}], selected: 0}
+        let config = defaults({envs,targets:{items:[], selected: 0},commands,comName:'none'}, readJson(this._path))
         this._config = config
     }
 
