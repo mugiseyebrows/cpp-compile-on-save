@@ -43,7 +43,9 @@ class Manager {
         //debug('onEvent',root,filename)
         let basename = path.basename(filename)
         let ext = path.extname(basename)
-        let absFileName = path.join(root,filename)
+
+        let absFileName = path.isAbsolute(filename) ? filename : path.join(root,filename)
+
         let sourceExts = new Set(['.ui','.cpp','.h','.pro'])
         let binaryExts = new Set(['.dll','.exe'])
 
@@ -67,6 +69,14 @@ class Manager {
 
             let task = {cmd:'make',mode,cwd,kill,name}
             taskQueue.add(task,false,target)
+            
+        } else if (ext === "") {
+
+            let found = this._config.targets.items.find(item => (item.debug === absFileName || item.release === absFileName))
+            if (found) {
+                taskQueue.emit('binary-changed',absFileName)
+            }
+
         }
 
     }
@@ -101,8 +111,7 @@ class Manager {
         this._active = active
         this._taskQueue = taskQueue
         this._trafficLights = trafficLights
-        taskQueue.config = this._config
-        trafficLights.config = this._config
+        this.config = this._config
     }
 
     get config() {
