@@ -54,8 +54,10 @@ class App extends Component {
       mtime: {},
       makeStat: {},
       envs: {items: [], selected: 0},
-      targets2: {items: [], selected: 0},
-      commands2: {items: [], selected: 0}
+      targets: {items: [], selected: 0},
+      commands: {items: [], selected: 0},
+      comName: 'none',
+      comNames: [],
     }
 
     this.refStdout = React.createRef()
@@ -65,7 +67,6 @@ class App extends Component {
     this.socket = io('http://localhost:4000')
 
     let socket = this.socket
-
 
     let onstd = (name,obj) => {
       let out = this.state[name]
@@ -175,21 +176,26 @@ class App extends Component {
     })
 
     socket.on('config',(config)=>{
-      this.setState({envs:config.envs, targets2:config.targets, commands2: config.commands})
+      let {envs, targets, commands, comName} = config
+      this.setState({envs, targets, commands, comName})
       this.emitSetEnv()
       this.updateMade()
-    })
+    })  
 
     socket.on('qt-project', target => {
-      let targets2 = this.state.targets2
-      let target_ = targets2.items.find(e => e.name === target.name)
+      let targets = this.state.targets
+      let target_ = targets.items.find(e => e.name === target.name)
       for(var k in target) {
         target_[k] = target[k]
       }
-      this.setState({targets2})
+      this.setState({targets})
     })
 
-    var reqs = ['targets','mtime','bookmarks','active','mode','make-stat','config']
+    socket.on('com-names',(comNames)=>{
+      this.setState({comNames})
+    })
+
+    var reqs = ['mtime','active','mode','make-stat','config','com-names']
 
     reqs.forEach(req => this.emit(req))
 
@@ -209,12 +215,12 @@ class App extends Component {
     var mtime = this.state.mtime
     var modes = ['debug','release']
 
-    if (!this.state.targets2.items) {
-      //console.log(this.state.targets2)
+    if (!this.state.targets.items) {
+      //console.log(this.state.targets)
       return
     }
 
-    this.state.targets2.items.forEach(target => {
+    this.state.targets.items.forEach(target => {
       //console.log('target',target)
       made[target.name] = {debug:null,release:null}
       modes.forEach(mode => {
@@ -242,7 +248,7 @@ class App extends Component {
       .forEach(target => this.handleProjectCommand('make', target, mode))*/
 
       let envName = this.currentEnvName()
-      this.state.targets2.items
+      this.state.targets.items
         .filter( target => target.envs.indexOf(envName) > -1 )
         .forEach( target => this.handleProjectCommand('make',target, mode) )
 
@@ -359,14 +365,16 @@ class App extends Component {
       made = this.state.made[target.name][mode]
     }
 
-    let notBookmarks = this.state.commands2.items.filter(item => item.bookmark === false && ['edit-file','explore'].indexOf(item.name) < 0)
+    let commands = defaults({items:[],selected:0}, this.state.commands)
+
+    //let notBookmarks = commands.items.filter(item => item.bookmark === false && ['edit-file','explore'].indexOf(item.name) < 0)
 
     //console.log('notBookmarks',notBookmarks)
 
     let renderMenuItem = (command,i) => <div key={i} className="menu-item" onClick={() => this.handleProjectCommand(command.name, target, mode)}> {command.name}</div>
 
-    let menuShown = notBookmarks.filter(item => item.shown === true && item.bookmark === false).map(renderMenuItem)
-    let menuHidden = notBookmarks.filter(item => item.shown === false && item.bookmark === false).map(renderMenuItem)
+    let menuShown = commands.items.filter(item => item.context === 'target').map(renderMenuItem)
+    let menuHidden = commands.items.filter(item => item.context === 'target-popup').map(renderMenuItem)
 
     return (<tr key={i} className={rowClasses}>
           <td>
@@ -382,7 +390,7 @@ class App extends Component {
               closeOnDocumentClick
               mouseLeaveDelay={0}
               mouseEnterDelay={0}
-              contentStyle={{ padding: '0px', border: 'none', width: '80px', textAlign: 'center' }}
+              contentStyle={{ padding: '0px', width: '80px', textAlign: 'center', margin: '0px' }}
               arrow={false}>
               <div>
                 {menuHidden}
@@ -396,19 +404,19 @@ class App extends Component {
 
   activeTargets() {
     let currentEnvName = this.currentEnvName()
-    return this.state.targets2.items.filter(target => target.envs.indexOf(currentEnvName) > -1)
+    return this.state.targets.items.filter(target => target.envs.indexOf(currentEnvName) > -1)
   }
 
   renderTargets = () => {
 
-    let items = this.state.targets2.items
+    let items = this.state.targets.items
 
     if (!items) {
       console.log('!items')
       return
     }
 
-    var targetsHeader = <tr><th>name</th><th>made</th><th>make</th><th>make time</th></tr>
+    var targetsHeader = <tr><th>name</th><th>made</th><th>commands</th><th>make time</th></tr>
     
     var targetsBody = items.map((target,i) => this.renderTarget(target,i))
     return (<table className="targets">
@@ -479,14 +487,16 @@ class App extends Component {
 
     //console.log('render',+new Date())
 
-    let targets = this.renderTargets()
+    //let targets = this.renderTargets()
     let tasks = this.renderTasks()
     //let bookmarks = this.renderBookmarks()
     this.scrollStdOutAndStdErr()
    
     //let bookmarks = this.state.bookmarks.map((bookmark,i) => )
 
-    let bookmarks = this.state.commands2.items.filter(item => item.bookmark === true).map((item,i) => <MenuItem key={i} text={item.name} onClick={()=>this.emit('open-bookmark',item.name)}/>)
+    let commands_ = defaults({items:[],selected:0},this.state.commands)
+
+    let bookmarks = commands_.items.filter(item => item.context === 'bookmark').map((item,i) => <MenuItem key={i} text={item.name} onClick={()=>this.emit('open-bookmark',item.name)}/>)
 
     //targets = null
 
@@ -502,9 +512,9 @@ class App extends Component {
         let labels = ['name','path']
         let items = labels.map(name => <Input value={item[name]} onChange={value => {item[name] = value; this.setState({envs})}}/>)
 
-        let selectItems = ['replace','prepend','append']
+        let modeOptions = ['replace','prepend','append']
 
-        let select = <Select id="path-mode" options={selectItems} selected={item.mode || 'replace'} onChange={(value) => {
+        let select = <Select id="path-mode" options={modeOptions} selected={item.mode || 'replace'} onChange={(value) => {
           item.mode = value
           this.setState({envs})
         }}/>
@@ -538,15 +548,15 @@ class App extends Component {
       },
     }
 
-    let targets2 = {
+    let targets = {
       title: <h3>targets</h3>,
-      items: this.state.targets2 ? this.state.targets2.items : [],
-      selected: this.state.targets2 ? this.state.targets2.selected : 0,
+      items: this.state.targets ? this.state.targets.items : [],
+      selected: this.state.targets ? this.state.targets.selected : 0,
       editor: (item) => {
         let onChange = (p,value) => {
-          let targets2 = this.state.targets2
+          let targets = this.state.targets
           item[p] = value
-          this.setState({targets2})
+          this.setState({targets})
         }
         let onQtProject = (item) => {
           this.emit('qt-project',item)
@@ -555,57 +565,63 @@ class App extends Component {
         return <TargetEdit envs={this.state.envs} item={item} onChange={onChange} onQtProject={onQtProject}/>
       },
       onSelect: (selected) => {
-        let targets2 = this.state.targets2
-        targets2.selected = selected
-        this.setState({targets2})
+        let targets = this.state.targets
+        targets.selected = selected
+        this.setState({targets})
       },
       onAdd: (value) => {
-        let targets2 = defaults({},{items:[],selected:0},this.state.targets2)
-        targets2.items.push({name:value,debug:'',release:'',cwd:'',pro:'',kill:'',envs:[]})
-        targets2.selected = targets2.items.length - 1
-        this.setState({targets2})
+        let targets = defaults({},{items:[],selected:0},this.state.targets)
+        targets.items.push({name:value,debug:'',release:'',cwd:'',pro:'',kill:'',envs:[]})
+        targets.selected = targets.items.length - 1
+        this.setState({targets})
       },
       onRemove: (selected) => {
-        let targets2 = this.state.targets2
-        targets2.items.splice(selected,1)
-        targets2.selected = targets2.items.length - 1
-        this.setState({targets2})
+        let targets = this.state.targets
+        targets.items.splice(selected,1)
+        targets.selected = targets.items.length - 1
+        this.setState({targets})
       }
     }
 
     let commands = {
       title: <h3>commands</h3>,
-      items: this.state.commands2 ? this.state.commands2.items : [],
-      selected: this.state.commands2 ? this.state.commands2.selected : 0,
+      items: this.state.commands ? this.state.commands.items : [],
+      selected: this.state.commands ? this.state.commands.selected : 0,
       editor: (item) => {
 
         //console.log('editor(item)', item)
 
-        let commands2 = this.state.commands2
-        let labels = ['name','cmd']
-        let items = labels.map(name => <Input value={item[name]} onChange={value => {item[name] = value; this.setState({commands2})}}/>)
+        let commands = this.state.commands
+        let labels = ['name','cmd','task','context']
+        let items = ['name','cmd'].map(name => <Input value={item[name]} onChange={value => {item[name] = value; this.setState({commands})}}/>)
 
-        let labels2 = ['task','shown','bookmark']
-        let items2 = labels2.map(name => <CheckBoxWithLabel label={name} checked={item[name]} onChange={checked => { item[name] = checked; this.setState({commands2})}} />)
+        items.push(checkbox(item,'task',()=>{this.setState({commands})}))
+        
+        let contextOptions = ['target','target-popup','bookmark','hidden']
 
-        return <TwoColumnsTable labels={labels.concat(labels2.map(e => ''))} items={items.concat(items2)} prefix="command-input-"/>
+        items.push( <Select options={contextOptions} selected={item.context || 'target-popup'} onChange={(value) => {
+          item.context = value
+          this.setState({commands})
+        }}/> )
+        
+        return <TwoColumnsTable labels={labels} items={items} prefix="command-input-"/>
       },
       onSelect: (selected) => {
-        let commands2 = this.state.commands2
-        commands2.selected = selected
-        this.setState({commands2})
+        let commands = this.state.commands
+        commands.selected = selected
+        this.setState({commands})
       },
       onAdd: (value) => {
-        let commands2 = defaults({items:[],selected:0},this.state.commands2)
-        let item = {name: value, task: false, shown: false, bookmark: false, cmd: ''}
-        commands2.items.push(item)
-        commands2.selected = commands2.items.length - 1
-        this.setState({commands2})
+        let commands = defaults({items:[],selected:0},this.state.commands)
+        let item = {name: value, cmd: '', task: false, context: 'target-popup'}
+        commands.items.push(item)
+        commands.selected = commands.items.length - 1
+        this.setState({commands})
       },
       onRemove: (selected) => {
-        let commands2 = this.state.commands2
-        commands2.items.splice(selected,1)
-        this.setState({commands2})
+        let commands = this.state.commands
+        commands.items.splice(selected,1)
+        this.setState({commands})
       }
     }
 
@@ -627,12 +643,19 @@ class App extends Component {
 
               <div className="config-wrapper">
               <ListEdit {...envs} />
-              <ListEdit {...targets2} />              
+              <ListEdit {...targets} />              
               <ListEdit {...commands} />
               </div>
 
+              <div className="serial-port-wrapper">
+              <label> Serial port
+              {this.state.comNames.length > 0 ? <Select options={this.state.comNames} selected={this.state.comName} onChange={(comName)=>{this.setState({comName})}}/> : null }
+              </label>
+              </div>
+
               <button onClick={()=>{
-                  let data = {envs:this.state.envs,targets:this.state.targets2,commands:this.state.commands2}
+                  let {envs, targets, commands, comName} = this.state
+                  let data = {envs, targets, commands, comName}
                   //console.log(data)
                   this.emit('set-config',data);
                   this.emit('mtime')
@@ -663,7 +686,7 @@ class App extends Component {
                 </Popup>
               
             </FlexPaneBar>
-            {targets}
+            {this.renderTargets()}
 
           </FlexPane>
           <FlexPane title="tasks">

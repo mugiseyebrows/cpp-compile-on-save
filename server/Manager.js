@@ -1,16 +1,19 @@
 
-const {findRoots2, isPathContains, sortedPaths, findTarget, findTarget2} = require('./Utils')
+const {findRoots, isPathContains, findTarget, defaults, readJson, writeJson} = require('./Utils')
 const debug = require('debug')('cpp-compile-on-save')
 const fs = require('fs')
 const path = require('path')
 var watch = require('node-watch')
 
 class Manager {
-    constructor(taskQueue) {
-        this._taskQueue = taskQueue
+
+    constructor() {
         this._watched = []
         this._mode = 'debug'
         this._active = false
+        this._path = path.join(__dirname,'..','config.json')
+        let config = defaults({envs:{items:[{name:'default',path:'',mode:'replace'}], selected: 0},targets:{items:[], selected: 0},commands:{items:[], selected: 0},comName:'none'}, readJson(this._path))
+        this._config = config
     }
 
     onEvent(root,filename) {
@@ -34,7 +37,7 @@ class Manager {
                 return
             }
 
-            let target = findTarget2(this._config,absFileName)
+            let target = findTarget(this._config,absFileName)
 
             let mode = this._mode
             let {cwd, kill, name} = target
@@ -70,15 +73,30 @@ class Manager {
         this._taskQueue.env = env
     }
 
+    init(mode, active, taskQueue, trafficLights) {
+        this._mode = mode
+        this._active = active
+        this._taskQueue = taskQueue
+        this._trafficLights = trafficLights
+        taskQueue.config = this._config
+        trafficLights.config = this._config
+    }
+
+    get config() {
+        return this._config
+    }
+
+    saveConfig() {
+        writeJson(this._path, this._config)
+    }
+
     set config(config) {
 
-        this._taskQueue.config = config
-
         this._config = config
+        this._taskQueue.config = config
+        this._trafficLights.config = config
         
-        let roots = findRoots2(config.targets.items.map(item => item.cwd))
-
-        //console.log('roots',roots)
+        let roots = findRoots(config.targets.items.map(item => item.cwd))
 
         let roots_ = []
         roots.forEach(root => {

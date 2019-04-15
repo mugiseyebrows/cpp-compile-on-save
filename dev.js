@@ -2,7 +2,13 @@ const {spawn} = require('child_process')
 const path = require('path')
 let env = process.env
 env['DEBUG'] = 'cpp-compile-on-save'
-let opts = {shell:true, detached:true, cwd: __dirname, env}
-spawn('nodemon',['-w','server',path.join('server','index.js')],opts)
-spawn('npm',['run','start'],opts)
+
+function spawnShell(cmd) {
+    let opts = {shell:true, detached:true, cwd: __dirname, env}
+    let cmd_ = process.platform === 'win32' ? cmd.split(' ') : ('gnome-terminal -- ' + cmd).split(' ')
+    spawn(cmd_[0],cmd_.slice(0),opts)
+}
+
+spawnShell('nodemon -w server ' + path.join('server','index.js'))
+spawnShell('npm run start')
 process.exit()

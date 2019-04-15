@@ -44,7 +44,7 @@ function pathDepth(path) {
     return path.split(path_sep).length
 }
 
-function findRoots2(paths) {
+function findRoots(paths) {
     let result = []
     var path_sep = /[\\/]/g
     paths = sortedPaths(paths)
@@ -60,14 +60,14 @@ function findRoots2(paths) {
     return result
 }
 
-function findTarget2(config,p) {
+function findTarget(config,p) {
     let items =  config.targets.items.filter(item => isPathContains(item.cwd, p))
 
     //config.targets.items.map(item => console.log('isPathContains(p, item.cwd)',isPathContains(p, item.cwd),'p',p,'item.cwd',item.cwd))
 
     let depths = items.map(item => pathDepth(item.cwd))
 
-    //console.log('findTarget2 items',items)
+    //console.log('findTarget items',items)
 
     return items[depths.indexOf(Math.max(...depths))]
 }
@@ -84,18 +84,18 @@ function spawnDetached(cmd,args,opts) {
     child.unref()
 }
 
-function getMtime2(targets2) {
+function getMtime(targets) {
     let modes = ['debug','release']
     let mtime = {}
 
-    targets2.items.forEach(target => {
+    targets.items.forEach(target => {
         mtime[target.name] = {
             debug:null,
             release:null
         }
         modes.forEach(mode => {
             let p = target[mode]
-            //console.log('getMtime2',mode,p)
+            //console.log('getMtime',mode,p)
             if (p.length > 0 && fs.existsSync(p)) {
                 mtime[target.name][mode] = fs.statSync(p).mtime
             }
@@ -119,6 +119,6 @@ function defaults(...objs) {
 }
 
 module.exports = {isPathContains, spawnDetached, 
-    readJson, writeJson, findRoots2, 
-    findTarget2, getMtime2, defaults
+    readJson, writeJson, findRoots, 
+    findTarget, getMtime, defaults
 }

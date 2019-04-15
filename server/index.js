@@ -16,13 +16,17 @@ const fs = require('fs')
 const TaskQueue = require('./TaskQueue')
 const TrafficLights = require('./TrafficLights')
 const MakeStat = require('./MakeStat')
-const {spawnDetached, getMtime2, readJson, writeJson} = require('./Utils')
+const {spawnDetached, getMtime} = require('./Utils')
 const Manager = require('./Manager')
 
 var port = 4000;
 server.listen(port, () => {
     console.log(`Server listening at port ${port}`)
 })
+
+let comNames
+
+TrafficLights.comNames().then(names => comNames = ['none',...names])
 
 var build = path.join(__dirname,'..', 'build')
 
@@ -31,35 +35,15 @@ if (fs.existsSync(build)) {
     app.use(express.static(build))
 } 
 
-var configSrc = path.join(__dirname,'config.' + process.platform + '.json')
-var configDst = path.join(__dirname,'config.json')
+var trafficLights = new TrafficLights()
 
-if (!fs.existsSync(configDst)) {
-    if (fs.existsSync(configSrc)) {
-        debug(`copy ${configSrc} to ${configDst}`)
-        fs.copyFileSync(configSrc,configDst)
-    } else {
-        console.log(`example config file ${configSrc} does not exist`)
-    }
-}
-
-let config2Path = path.join(__dirname,'..','config2.json')
-
-let config2 = readJson(config2Path) || {}
-
-//var bookmarks = readJson('bookmarks.json')
-var config = readJson(path.join(__dirname,'config.json'))
-
-var trafficLights = new TrafficLights(config.serialPort)
 var makeStat = new MakeStat()
 
-var taskQueue = new TaskQueue(makeStat, trafficLights, config)
+var taskQueue = new TaskQueue(makeStat, trafficLights)
 
-var manager = new Manager(taskQueue)
-manager.mode = 'debug'
-manager.active = true
-manager.config = config2
-manager.env = config2.envs.items[config2.envs.selected]
+var manager = new Manager()
+
+manager.init('debug', true, taskQueue, trafficLights)
 
 io.on('connection', (socket) => {
     debug('io connection')
@@ -72,13 +56,9 @@ io.on('connection', (socket) => {
     })
 
     socket.on('mtime',()=>{
-        var mtime = getMtime2(config2.targets)
+        var mtime = getMtime(manager.config.targets)
         //debug('mtime',mtime)
         socket.emit('mtime',mtime)
-    })
-
-    socket.on('bookmarks',() => {
-        socket.emit('bookmarks',config.bookmarks)
     })
 
     socket.on('open-bookmark', name => {
@@ -163,9 +143,8 @@ io.on('connection', (socket) => {
 
     socket.on('set-config',(config) => {
         debug('set-config')
-        writeJson(config2Path,config)
-        config2 = config
-        manager.config = config2
+        manager.config = config
+        manager.saveConfig()
     })
 
     socket.on('set-env',(env) => {
@@ -174,7 +153,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('config',()=>{
-        socket.emit('config',config2)
+        socket.emit('config',manager.config)
     })
 
     socket.on('qt-project', item => {
@@ -219,19 +198,17 @@ io.on('connection', (socket) => {
 
         }
 
-        
     })
-
 
     socket.on('project-command', opts => {
         let {name, target, mode} = opts;
         
         debug('project-command', opts.name, target.name, mode)
 
-        let command = config2.commands.items.find(c => c.name === name)
+        let command = manager.config.commands.items.find(c => c.name === name)
 
         if (!command) {
-            debug(`${command} not found in config`)
+            debug(`${name} not found in config`)
             return
         }
 
@@ -244,7 +221,7 @@ io.on('connection', (socket) => {
         } else {
             let {cmd, args, env} = taskQueue.makeCommand({name, target, mode, cwd:target.cwd, env:taskQueue.env})
 
-            debug(env.PATH)
+            //debug(env.PATH)
 
             if (cmd) {
                 spawnDetached(cmd, args, {cwd:target.cwd,env})
@@ -255,5 +232,16 @@ io.on('connection', (socket) => {
        
         
     })
+
+    socket.on('com-names',()=>{
+        if (comNames === undefined) {
+            setTimeout(()=>{
+                socket.emit('com-names',comNames)
+            },2000)
+        } else {
+            socket.emit('com-names',comNames)
+        }
+    })
+
 
 })
