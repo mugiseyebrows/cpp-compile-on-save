@@ -196,7 +196,11 @@ select.mode {
 }
 
 .top-menu .popup-content .menu-item {
-  padding: 5px;
+  padding: 2px 5px;
+}
+
+.menu-target .menu-item {
+  padding: 2px 5px;
 }
 
 .top-menu .menu-item img {
@@ -258,8 +262,4 @@ select.mode {
 
 .target-edit-envs {
   max-width: 20vw;
-}
-
-.menu-target .menu-item {
-  padding: 5px;
 }

@@ -22,6 +22,10 @@ class Manager {
                 {name:'edit',cmd:'qtcreator -client $pro',context:'target-popup',task:false},
                 {name:'qmake',cmd:'qmake',context:'target-popup',task:true},
                 {name:'code',cmd:'code -r',context:'bookmark',task:false},
+                {name:'gitk',cmd:'gitk --all',context:'target-popup',task:false},
+                {name:'cmd',cmd:'cmd.exe /c cmd.exe',context:'target-popup',task:false},
+                {name:"run debug", task: false, cmd: "$debug", context: "target-popup" }, 
+                {name:"run release", task: false, cmd: "$release", context: "target-popup"}
             ],selected:0}
         } else {
             commands = {items: [
@@ -32,6 +36,10 @@ class Manager {
                 {name:'edit',cmd:'qtcreator -client $pro',context:'target-popup',task:false},
                 {name:'qmake',cmd:'qmake -qt=5',context:'target-popup',task:true},
                 {name:'code',cmd:'code -r',context:'bookmark',task:false},
+                {name:'gitk',cmd:'gitk --all',context:'target-popup',task:false},
+                {name:'terminal',cmd:'gnome-terminal',context:'target-popup',task:false},
+                {name:"run debug", task: false, cmd: "$debug", context: "target-popup" }, 
+                {name:"run release", task: false, cmd: "$release", context: "target-popup"}
             ],selected:0}
         }
         let envs = {items:[{name:'default',path:'',mode:'replace'}], selected: 0}
@@ -71,7 +79,9 @@ class Manager {
             taskQueue.add(task,false,target)
             
         } else if (ext === "") {
-
+            if (process.platform === 'win32') {
+                return
+            }
             let found = this._config.targets.items.find(item => (item.debug === absFileName || item.release === absFileName))
             if (found) {
                 taskQueue.emit('binary-changed',absFileName)
@@ -127,6 +137,7 @@ class Manager {
         this._config = config
         this._taskQueue.config = config
         this._trafficLights.config = config
+        this.env = config.envs.items[config.envs.selected]
         
         let roots = findRoots(config.targets.items.map(item => item.cwd))
 
@@ -138,6 +149,11 @@ class Manager {
         })
 
         roots_.forEach(root => {
+
+            if (!fs.existsSync(root)) {
+                return
+            }
+
             debug(`watch ${root}`)
 
             if (process.platform === 'linux') {

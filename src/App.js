@@ -10,7 +10,7 @@ import Popup from "reactjs-popup";
 
 import Star from './star.svg'
 
-import {mtimeFromNow, putLinks, defaults} from './Utils'
+import {mtimeFromNow, dateTime, putLinks, defaults} from './Utils'
 
 import StdOutputs from './StdOutputs'
 
@@ -136,11 +136,7 @@ class App extends Component {
       stderr.push({cwd:cwd,mode:mode,cmd:cmd,lines:[],update:0})
       errors.push({cwd:cwd,mode:mode,cmd:cmd,lines:[],update:0})
 
-      this.setState({stdout:stdout,stderr:stderr,errors:errors})
-    })
-
-    socket.on('proc-exit',(cwd)=>{
-      socket.emit('targets')
+      this.setState({stdout,stderr,errors})
     })
 
     socket.on('tasks',(tasks) => {
@@ -170,7 +166,7 @@ class App extends Component {
       this.setState({active})
     })
 
-    socket.on('get-mode',(mode)=>{
+    socket.on('mode',(mode)=>{
       //console.log('get-mode',mode)
       this.setState({mode:mode})
     })
@@ -178,7 +174,6 @@ class App extends Component {
     socket.on('config',(config)=>{
       let {envs, targets, commands, comName} = config
       this.setState({envs, targets, commands, comName})
-      this.emitSetEnv()
       this.updateMade()
     })  
 
@@ -195,9 +190,11 @@ class App extends Component {
       this.setState({comNames})
     })
 
-    var reqs = ['mtime','active','mode','make-stat','config','com-names']
-
-    reqs.forEach(req => this.emit(req))
+    socket.on('env',(env) => {
+      let envs = this.state.envs
+      envs.selected = envs.items.indexOf(envs.items.find(env_ => env_.name === env.name))
+      this.setState({envs})
+    })
 
     setInterval(()=>{
       this.updateMade()
@@ -225,7 +222,8 @@ class App extends Component {
       made[target.name] = {debug:null,release:null}
       modes.forEach(mode => {
         if (mtime[target.name] && mtime[target.name][mode]) {
-          made[target.name][mode] = mtimeFromNow(mtime[target.name][mode])
+          let t = mtimeFromNow(mtime[target.name][mode])
+          made[target.name][mode] = t
         }
       })
     })
@@ -364,6 +362,10 @@ class App extends Component {
     if (this.state.made[target.name] && this.state.made[target.name][mode]) {
       made = this.state.made[target.name][mode]
     }
+    let mtime
+    if (this.state.mtime[target.name] && this.state.mtime[target.name][mode]) {
+      mtime = dateTime(this.state.mtime[target.name][mode])
+    }
 
     let commands = defaults({items:[],selected:0}, this.state.commands)
 
@@ -380,7 +382,11 @@ class App extends Component {
           <td>
             <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
           </td>
-          <td>{made}</td>
+          <td>
+          <Popup trigger={<div className="mktime">{made}</div>} on="hover" arrow={false}>
+            <div>{mtime}</div>
+          </Popup>
+          </td>
           <td className="menu-target">
             {menuShown}
             <Popup
@@ -390,7 +396,7 @@ class App extends Component {
               closeOnDocumentClick
               mouseLeaveDelay={0}
               mouseEnterDelay={0}
-              contentStyle={{ padding: '0px', width: '80px', textAlign: 'center', margin: '0px' }}
+              contentStyle={{ padding: '0px', width: '100px', textAlign: 'center', margin: '0px' }}
               arrow={false}>
               <div>
                 {menuHidden}

@@ -5,7 +5,7 @@ env['DEBUG'] = 'cpp-compile-on-save'
 
 function spawnShell(cmd) {
     let opts = {shell:true, detached:true, cwd: __dirname, env}
-    let cmd_ = process.platform === 'win32' ? cmd.split(' ') : ('gnome-terminal -- ' + cmd).split(' ')
+    let cmd_ = process.platform === 'win32' ? ('cmd /c ' + cmd).split(' ') : ('gnome-terminal -- ' + cmd).split(' ')
     spawn(cmd_[0],cmd_.slice(0),opts)
 }
 

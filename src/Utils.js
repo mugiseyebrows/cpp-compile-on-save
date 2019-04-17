@@ -17,6 +17,10 @@ export function mtimeFromNow(d) {
   return moment(d,"YYYY-MM-DDTHH:mm:ss.SSSZ").fromNow()
 }
 
+export function dateTime(d) {
+  return moment(d,"YYYY-MM-DDTHH:mm:ss.SSSZ").format("DD-MM-YYYY HH:mm:ss")
+}
+
 export function randomBackground(props) {
   return {backgroundColor: `hsl(${Math.round(Math.random()*360)},100%,50%)`}
 }

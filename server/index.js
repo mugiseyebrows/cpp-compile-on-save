@@ -47,7 +47,23 @@ manager.init('debug', true, taskQueue, trafficLights)
 
 io.on('connection', (socket) => {
     debug('io connection')
-    
+
+    socket.emit('config',manager.config)
+    socket.emit('mode', manager.mode)
+    socket.emit('active',manager.active)
+    socket.emit('mtime',getMtime(manager.config.targets))
+    socket.emit('make-stat',makeStat.stat)
+    socket.emit('env',manager.env)
+    if (comNames !== undefined) {
+        socket.emit('com-names',comNames)
+    } else {
+        setTimeout(()=>{
+            socket.emit('com-names',comNames)
+        },1000)
+    }
+
+    //'mtime','active','mode','make-stat','config','com-names'
+
     // pipe taskQueue events to socket
     taskQueue.eventNames().forEach(name => {
         taskQueue.on(name, (obj) => {
@@ -114,7 +130,7 @@ io.on('connection', (socket) => {
     socket.on('set-mode', mode => {
         debug('set-mode', mode)
         manager.mode = mode
-        socket.emit('get-mode',manager.mode)
+        socket.emit('mode',manager.mode)
     })
 
     socket.on('mode', () => {
@@ -213,10 +229,7 @@ io.on('connection', (socket) => {
         }
 
         if (command.task === true) {
-            var task = {cmd:name, mode, cwd:target.cwd, name: target.name}
-            if (command == 'make') {
-                task['kill'] = target.kill
-            }
+            var task = {cmd:name, mode, cwd:target.cwd, name: target.name, kill: target.kill}
             taskQueue.add(task,false,target)
         } else {
             let {cmd, args, env} = taskQueue.makeCommand({name, target, mode, cwd:target.cwd, env:taskQueue.env})
