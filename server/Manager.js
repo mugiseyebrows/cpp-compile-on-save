@@ -73,10 +73,12 @@ class Manager {
             let target = findTarget(this._config,absFileName)
 
             let mode = this._mode
-            let {cwd, kill, name} = target
+            
+            let task = {cmd:'make',mode,target}
 
-            let task = {cmd:'make',mode,cwd,kill,name}
-            taskQueue.add(task,false,target)
+            //debug('task',task)
+
+            taskQueue.add(task,false)
             
         } else if (ext === "") {
             if (process.platform === 'win32') {

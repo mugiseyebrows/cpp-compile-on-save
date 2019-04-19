@@ -14,7 +14,9 @@ const {defaults} = require('./Utils')
 class Killer {
     listen(proc, task, add) {
         proc.stderr.on('data',(data) => {
-            if (!task.kill || task.kill.length === 0) {
+
+            let kill = task.target.kill
+            if (!kill || kill.length === 0) {
                 return
             }
             let lines = data.toString().split('\n')
@@ -22,7 +24,7 @@ class Killer {
             if (cannotOpen.length === 0) {
                 return
             }
-            let kill = task.kill.split(' ').filter(e => e.length)
+            kill = kill.split(' ').filter(e => e.length)
             add(task,true)
             kill.forEach(name => add({cmd:'kill',proc:name}, true))
         })
@@ -76,10 +78,10 @@ class TaskQueue extends EventEmitter {
     }
 
     hasTask(newTask) {
-        if (newTask.cwd === undefined) {
-            return false;
+        let cwd = (item) => {
+            return item.target ? item.target.cwd : item.cwd
         }
-        return this.tasks.filter( task => task.cwd == newTask.cwd && task.mode == newTask.mode && task.cmd == newTask.cmd ).length > 0
+        return this.tasks.find(task => task.cmd === newTask.cmd && task.mode === newTask.mode && cwd(task) === cwd(newTask)) != undefined
     }
 
     cancel() {
@@ -96,17 +98,28 @@ class TaskQueue extends EventEmitter {
 
     makeCommand(opts) {
 
-        let {name, target, mode, cwd, file, env} = opts
+        let {name, target, mode, cwd, file} = opts
 
-        if (!cwd) {
-            if (target) {
-                cwd = target.cwd
+        if (!cwd && target) {
+            cwd = target.cwd
+        }
+
+        let env 
+        if (!target) {
+            env = this._env
+        } else {
+            if (target.envs.length === 0) {
+                env = this._env
+            } else {
+                if (target.envs.indexOf(this._env.name)>-1) {
+                    env = this._env
+                } else {
+                    env = this._config.envs.items.find(item => item.name == target.envs[0])
+                }                
             }
         }
 
-        let commands = this._config.commands
-
-        let command = commands.items.find(c => c.name == name)
+        let command = this._config.commands.items.find(c => c.name == name)
         if (!command) {
             debug('!command')
             return {}
@@ -121,6 +134,7 @@ class TaskQueue extends EventEmitter {
             }
             if (!pro) {
                 debug(`cannot find pro in ${cwd}`)
+                return {}
             } else {
                 cmd_ = cmd_.replace('$pro', pro)
             }
@@ -157,26 +171,14 @@ class TaskQueue extends EventEmitter {
             } else {
                 debug('mode', env.mode, env.name)
             }
-            env_ = defaults(env_, {PATH: path, Path: path})
+            if (process.platform === 'win32') {
+                env_ = defaults(env_, {PATH: path, Path: path})
+            } else {
+                env_ = defaults(env_, {PATH: path})
+            }
         }
 
-        //debug('env.PATH',env.PATH)
-        
         return {cmd:cmd_[0], args:cmd_.slice(1), env:env_}
-
-        /*var repl = {
-            '$mode': mode,
-            '$cwd': cwd
-        }
-        if (target != null) {
-            repl['$pro'] = target.pro || path.join(cwd, fs.readdirSync(cwd).find(name => name.endsWith('.pro')))
-        } else {
-            
-        }
-        let [cmd, args] = toCmdArgs(cmd_, args_, repl)
-        return {cmd:cmd, args:args}
-
-        return command*/
     }
 
     set config(value) {
@@ -192,13 +194,11 @@ class TaskQueue extends EventEmitter {
         return this._env
     }
 
-    add(newTask, front, target) {
+    add(newTask, front) {
 
         if (newTask != null) {
             if (!this.hasTask(newTask)) {
-
-                newTask.env = this._env
-                debug(`adding to tasklist`,newTask)
+                debug(`adding to tasklist ${newTask.cmd} ${newTask.mode} @ ${newTask.target ? newTask.target.cwd : newTask.cwd}`)
                 if (front == true) {
                     this.tasks = [newTask,...this.tasks]
                 } else {
@@ -206,7 +206,7 @@ class TaskQueue extends EventEmitter {
                 }
                 debug(`${this.tasks.length} tasks queued`)
             } else {
-                debug(newTask,`already in tasklist`)
+                debug(`already in tasklist ${newTask.cmd} ${newTask.mode} @ ${newTask.target ? newTask.target.cwd : newTask.cwd}`)
             }
         }
 
@@ -245,15 +245,15 @@ class TaskQueue extends EventEmitter {
 
             this.emitTasks()
 
-            if (task.cmd != 'kill') {
-
-                var cwd = task.cwd
+            if (task.cmd !== 'kill') {
 
                 var t = +new Date()
                 
-                let {cmd,args,env} = this.makeCommand({name:task.cmd, target, mode:task.mode, env: this._env})
+                let {cmd,args,env} = this.makeCommand({name:task.cmd, target:task.target, mode:task.mode})
 
                 //console.log('cmd,args',cmd,args)
+
+                let cwd = task.target ? task.target.cwd : task.cwd
 
                 try {
                     this.proc = spawn(cmd, args, {cwd,env})
@@ -266,21 +266,16 @@ class TaskQueue extends EventEmitter {
                     this.add(...args)
                 })
 
-                this.emit('proc-start', {cwd:task.cwd, mode:task.mode, cmd:task.cmd})
+                this.emit('proc-start', {cwd: task.target ? task.target.cwd : task.cwd, mode:task.mode, cmd:task.cmd})
 
                 this.trafficLights.blue()
 
                 this._cacher.listen(this.proc, cwd)
 
-                if (task.name === undefined) {
-                    debug(`task.name === undefined 1`)
-                }
-
                 if (task.cmd == 'make' && task.mode !== 'clean') {
-                    this.makeStat.set(task.name, task.mode, null, null)
+                    this.makeStat.set(task.target.name, task.mode, null, null)
                     this.emitMakeStat()
                 }
-
 
                 this.proc.on('exit',(code)=>{
                     t = +new Date() - t
@@ -292,15 +287,15 @@ class TaskQueue extends EventEmitter {
                     } else {
                         this.trafficLights.red()
                     }
-                    if (task.cmd == 'make') {
-                        this.makeStat.set(task.name, task.mode, code, t)
+                    if (task.cmd === 'make') {
+                        this.makeStat.set(task.target.name, task.mode, code, t)
                         this.emitMakeStat()
                     }
                     this.running = null
                     this.add(null)
                 })
 
-            } else if (task.cmd == 'kill') {
+            } else if (task.cmd === 'kill') {
 
                 debug(`killing ${task.proc}`)
 

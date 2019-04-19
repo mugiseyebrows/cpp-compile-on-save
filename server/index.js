@@ -72,9 +72,8 @@ io.on('connection', (socket) => {
     })
 
     socket.on('mtime',()=>{
-        var mtime = getMtime(manager.config.targets)
         //debug('mtime',mtime)
-        socket.emit('mtime',mtime)
+        socket.emit('mtime',getMtime(manager.config.targets))
     })
 
     socket.on('open-bookmark', name => {
@@ -101,13 +100,8 @@ io.on('connection', (socket) => {
         if (line !== undefined) {
             path_ = path_ + ':' + line
         }
-        // qtcreator doesn't understand path:row:col format
-        /*if (obj.colNum !== null) {
-            path_ = path_ + ':' + obj.colNum
-        }*/
-        //let [cmd, args] = toCmdArgs(config.editor, [path_])
-
-        let {cmd, args, env} = taskQueue.makeCommand({name:'edit-file',cwd,file:path_,env:manager.env})
+        
+        let {cmd, args, env} = taskQueue.makeCommand({name:'edit-file',cwd,file:path_})
 
         if (cmd) {
             spawnDetached(cmd, args, {env})
@@ -161,6 +155,7 @@ io.on('connection', (socket) => {
         debug('set-config')
         manager.config = config
         manager.saveConfig()
+        socket.emit('mtime',getMtime(manager.config.targets))
     })
 
     socket.on('set-env',(env) => {
@@ -229,8 +224,8 @@ io.on('connection', (socket) => {
         }
 
         if (command.task === true) {
-            var task = {cmd:name, mode, cwd:target.cwd, name: target.name, kill: target.kill}
-            taskQueue.add(task,false,target)
+            var task = {cmd:name, mode, target}
+            taskQueue.add(task,false)
         } else {
             let {cmd, args, env} = taskQueue.makeCommand({name, target, mode, cwd:target.cwd, env:taskQueue.env})
 

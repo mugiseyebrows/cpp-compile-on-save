@@ -23,6 +23,7 @@ import Input from './Input'
 import ListEdit from './ListEdit'
 import TargetEdit from './TargetEdit'
 import TwoColumnsTable from './TwoColumnTable'
+import TaskList from './TaskList';
 
 function lastItem(vs) {
   return vs[vs.length-1]
@@ -431,25 +432,6 @@ class App extends Component {
             </table>)
   }
 
-  renderTasks = () => {
-    
-    var {queued, running} = this.state.tasks
-
-    if (queued.length === 0 && running === null) {
-      return null
-    }
-
-    let renderTask = (task,i,running) => {
-      let caption = task.cmd === 'kill' ? `${task.cmd} ${task.proc}` : `${task.cmd} ${task.mode} @ ${task.cwd}`
-      return <li key={i} className={classNames({"task-running": running})}>{caption}</li>
-    }
-
-    return (<ul className="tasks">
-              {running ? renderTask(running,-1,true) : null}
-              {queued.map((task,i) => renderTask(task,i))}
-            </ul>)
-  }
-
   scrollStdOutAndStdErr = () => {
     setTimeout(()=>{
       let es = [this.refStdout.current, this.refStderr.current, this.refErrors.current]
@@ -494,7 +476,7 @@ class App extends Component {
     //console.log('render',+new Date())
 
     //let targets = this.renderTargets()
-    let tasks = this.renderTasks()
+    
     //let bookmarks = this.renderBookmarks()
     this.scrollStdOutAndStdErr()
    
@@ -663,8 +645,7 @@ class App extends Component {
                   let {envs, targets, commands, comName} = this.state
                   let data = {envs, targets, commands, comName}
                   //console.log(data)
-                  this.emit('set-config',data);
-                  this.emit('mtime')
+                  this.emit('set-config',data)
                 }} >save</button>
 
           </FlexPane>
@@ -701,7 +682,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MugiMenu items={['abort','cancel']} onItemClick={(name) => this.handleTaskMenuClick(name)}/>
             </FlexPaneBar>
-            {tasks} 
+            <TaskList tasks={this.state.tasks}/>
           </FlexPane>
           <FlexPane title="errors" refPane={this.refErrors} className="errors">
             <FlexPaneBar>

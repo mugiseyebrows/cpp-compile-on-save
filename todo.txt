@@ -1,0 +1,3 @@
+s,task.cmd,task.name,
+config and env as functions (ssot)
+dict2put, dict2get
