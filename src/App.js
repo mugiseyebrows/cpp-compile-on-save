@@ -232,11 +232,6 @@ class App extends Component {
     this.setState({made:made})
   }
 
-  handleActiveChange = (e) => {
-    this.setState({active:!this.state.active})
-    this.emit('set-active',this.state.active)
-  }
-
   toggleModeSelect = () => {
     this.setState({modeSelect:!this.state.modeSelect})
   }
@@ -655,7 +650,7 @@ class App extends Component {
                 <FlexPaneButtons/>
                 <FlexPaneTitle/>
                 <MenuItem>
-                  <CheckBoxWithLabel label="active" checked={this.state.active} onChange={this.handleActiveChange} />
+                  <CheckBoxWithLabel label="active" checked={this.state.active} onChange={(active) => {this.setState({active}); this.emit('set-active',active)}} />
                 </MenuItem>
                 <MenuItem>
                   {this.renderEnvSelect()}
