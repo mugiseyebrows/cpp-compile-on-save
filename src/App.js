@@ -14,8 +14,6 @@ import {mtimeFromNow, dateTime, putLinks, defaults} from './Utils'
 
 import StdOutputs from './StdOutputs'
 
-import MugiMenu from 'react-mugimenu'
-
 import Select from './Select'
 
 import './App.css'
@@ -236,7 +234,7 @@ class App extends Component {
     this.setState({modeSelect:!this.state.modeSelect})
   }
 
-  handleMakeAll = (mode) => {
+  handleMakeAll = (name) => {
     /*this.state.targets
       .filter((target) => this.state.targetsVisibility[target.name])
       .forEach(target => this.handleProjectCommand('make', target, mode))*/
@@ -244,12 +242,12 @@ class App extends Component {
       let envName = this.currentEnvName()
       this.state.targets.items
         .filter( target => target.envs.indexOf(envName) > -1 )
-        .forEach( target => this.handleProjectCommand('make',target, mode) )
+        .forEach( target => this.handleProjectCommand(name,target) )
 
   }
 
-  handleProjectCommand = (name, target, mode) => {
-    this.emit('project-command',{name:name, target:target, mode: mode})
+  handleProjectCommand = (name, target) => {
+    this.emit('project-command',{name:name, target:target, mode: this.state.mode})
   }
 
   handleClean = (subj) => {
@@ -376,7 +374,7 @@ class App extends Component {
 
     return (<tr key={i} className={rowClasses}>
           <td>
-            <MugiMenu className="target-name" items={[target.name]} onItemClick={() => this.handleExploreOrCheck(target,i)} />
+            <MenuItem text={target.name} onClick={() => this.handleExploreOrCheck(target,i)} />
           </td>
           <td>
           <Popup trigger={<div className="mktime">{made}</div>} on="hover" arrow={false}>
@@ -659,8 +657,8 @@ class App extends Component {
                   <Select className="mode" options={[{value:'debug',label:'debug'},{value:'release',label:'release'}]} onChange={(value) => this.emit('set-mode',value)} selected={this.state.mode} />
                 </MenuItem>
                 <MenuItem className="menu-spacer"/>
-                <MenuItem text="make" onClick={()=>{this.handleMakeAll(this.state.mode)}}/>
-                <MenuItem text="clean" onClick={()=>{this.handleMakeAll('clean')}}/>
+                <MenuItem text="make" onClick={() => this.handleMakeAll('make')}/>
+                <MenuItem text="clean" onClick={() => this.handleMakeAll('clean')}/>
                 <Popup trigger={<div className="menu-item"><img src={Star} alt="Star"/></div>} position="bottom right" on="hover" arrow={false} contentStyle={{width:'110px', textAlign: 'center', padding: '0px'}} >
                   <div>
                     {bookmarks}
@@ -672,34 +670,37 @@ class App extends Component {
 
           </FlexPane>
           <FlexPane title="tasks">
-            <FlexPaneBar>
+            <FlexPaneBar className="tasks-menu">
               <FlexPaneButtons/>
               <FlexPaneTitle/>
-              <MugiMenu items={['abort','cancel']} onItemClick={(name) => this.handleTaskMenuClick(name)}/>
+              
+              <MenuItem text="abort" onClick={() => this.emit('abort')}/>
+              <MenuItem text="cancel" onClick={() => this.emit('cancel')}/>
+
             </FlexPaneBar>
             <TaskList tasks={this.state.tasks}/>
           </FlexPane>
           <FlexPane title="errors" refPane={this.refErrors} className="errors">
-            <FlexPaneBar>
+            <FlexPaneBar className="errors-menu">
               <FlexPaneButtons/>
               <FlexPaneTitle/>
-              <MugiMenu items={['clean']} onItemClick={() => this.handleClean('errors')}/>
+              <MenuItem text="clean" onClick={() => this.handleClean('errors')}/>
             </FlexPaneBar>
             <StdOutputs data={this.state.errors} onAnchor={handleEditFile} showEmpty={false}/>
           </FlexPane>
           <FlexPane title="stdout" refPane={this.refStdout} className="stdout">
-            <FlexPaneBar>
+            <FlexPaneBar className="stdout-menu">
               <FlexPaneButtons/>
               <FlexPaneTitle/>
-              <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stdout')}/>
+              <MenuItem text="clean" onClick={() => this.handleClean('stdout')}/>
             </FlexPaneBar>
             <StdOutputs data={this.state.stdout} onAnchor={handleEditFile}/>
           </FlexPane>
           <FlexPane title="stderr" refPane={this.refStderr} className="stderr">
-            <FlexPaneBar>
+            <FlexPaneBar className="stderr-menu">
               <FlexPaneButtons/>
               <FlexPaneTitle/>
-              <MugiMenu items={['clean']} onItemClick={() => this.handleClean('stderr')}/>
+              <MenuItem text="clean" onClick={() => this.handleClean('stderr')}/>
             </FlexPaneBar>
             <StdOutputs data={this.state.stderr} onAnchor={handleEditFile}/>
           </FlexPane>

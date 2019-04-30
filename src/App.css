@@ -195,6 +195,22 @@ select.mode {
   padding: 0 5px;
 }
 
+.tasks-menu .menu-item {
+  padding: 0 5px;
+}
+
+.stdout-menu .menu-item {
+  padding: 0 5px;
+}
+
+.stderr-menu .menu-item {
+  padding: 0 5px;
+}
+
+.errors-menu .menu-item {
+  padding: 0 5px;
+}
+
 .top-menu .popup-content .menu-item {
   padding: 2px 5px;
 }

@@ -10,7 +10,7 @@ export default function TaskList(props) {
     }
 
     let renderTask = (task,i,running) => {
-      let caption = task.cmd === 'kill' ? `${task.cmd} ${task.proc}` : `${task.cmd} ${task.cmd == 'make' ? task.mode : ''} @ ${task.target.cwd}`
+      let caption = task.cmd === 'kill' ? `${task.cmd} ${task.proc}` : `${task.cmd} ${task.cmd === 'make' ? task.mode : ''} @ ${task.target.cwd}`
       return <li key={i} className={classNames({"task-running": running})}>{caption}</li>
     }
 
