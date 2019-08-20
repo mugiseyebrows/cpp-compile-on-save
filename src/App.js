@@ -73,11 +73,15 @@ class App extends Component {
         console.log(`${name}.length === 0`)
         return
       }
+      if (obj.cwd === undefined) {
+        console.log('obj.cwd === undefined',obj)
+      }
+
       if (obj.cwd === lastItem(out).cwd) {
         putLinks(obj.data, obj.cwd).forEach(line => lastItem(out).lines.push(line))
         lastItem(out).update++
       } else {
-        console.log(obj.cwd, lastItem(out).cwd)
+        //console.log(obj.cwd, lastItem(out).cwd)
       }
       this.setState({[name]:out})
     }
@@ -629,9 +633,10 @@ class App extends Component {
               </div>
 
               <div className="serial-port-wrapper">
-              <label> Serial port
+              <label> Serial port&nbsp;
               {this.state.comNames.length > 0 ? <Select options={this.state.comNames} selected={this.state.comName} onChange={(comName)=>{this.setState({comName})}}/> : null }
-              </label>
+              </label>&nbsp;
+              <button onClick={() => this.emit('com-names',true)}> refresh </button>
               </div>
 
               <button onClick={()=>{

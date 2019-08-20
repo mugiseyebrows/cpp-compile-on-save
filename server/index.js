@@ -24,9 +24,35 @@ server.listen(port, () => {
     console.log(`Server listening at port ${port}`)
 })
 
-let comNames
 
-TrafficLights.comNames().then(names => comNames = ['none',...names])
+class ComNames {
+    constructor() {
+        this._cb = []
+        this._requested = false
+    }
+    get(force, cb) {
+        if (force) {
+            this._cb.push(cb)
+            if (!this._requested) {
+                this._requested = true
+                TrafficLights.comNames().then(names => {
+                    this._names = ['none',...names]
+                    this._cb.forEach(cb => cb(this._names))
+                    this._cb = []
+                    this._requested = false
+                })
+            }
+        } else {
+            if (this._names !== undefined) {
+                cb(this._names)
+            } else {
+                this.get(true, cb)
+            }
+        }
+    }
+}
+
+var comNames = new ComNames()
 
 var build = path.join(__dirname,'..', 'build')
 
@@ -54,16 +80,9 @@ io.on('connection', (socket) => {
     socket.emit('mtime',getMtime(manager.config.targets))
     socket.emit('make-stat',makeStat.stat)
     socket.emit('env',manager.env)
-    if (comNames !== undefined) {
-        socket.emit('com-names',comNames)
-    } else {
-        setTimeout(()=>{
-            socket.emit('com-names',comNames)
-        },1000)
-    }
 
-    //'mtime','active','mode','make-stat','config','com-names'
-
+    comNames.get(false, (names) => socket.emit('com-names',names))
+    
     // pipe taskQueue events to socket
     taskQueue.eventNames().forEach(name => {
         taskQueue.on(name, (obj) => {
@@ -141,10 +160,6 @@ io.on('connection', (socket) => {
         debug('abort')
         taskQueue.abort()
     })
-
-    /*socket.on('commands',()=>{
-        socket.emit('commands',config.commands)
-    })*/
 
     socket.on('make-stat',()=>{
         debug('make-stat')
@@ -241,15 +256,8 @@ io.on('connection', (socket) => {
         
     })
 
-    socket.on('com-names',()=>{
-        if (comNames === undefined) {
-            setTimeout(()=>{
-                socket.emit('com-names',comNames)
-            },2000)
-        } else {
-            socket.emit('com-names',comNames)
-        }
+    socket.on('com-names', (force) => {
+        comNames.get(force, (names) => socket.emit('com-names', names))
     })
-
 
 })

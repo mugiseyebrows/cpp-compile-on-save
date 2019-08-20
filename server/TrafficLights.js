@@ -17,41 +17,58 @@ class TrafficLights {
     }
 
     set config(config) {
-        if (config.comName !== 'none' && config.comName !== undefined) {
+        if (config.comName !== undefined) {
             this.open(config.comName)
         }
+    }
+
+    reset() {
+        if (this._port && this._port.isOpen) {
+            debug('TrafficLights.close')
+            this._port.close(showError)
+        }
+        this._port = undefined
+        this._name = 'none'
     }
 
     open(name) {
         if (this._name === name) {
             return
         }
+        this.reset()
         this._name = name
-        if (this._port && this._port.isOpen) {
-            this._port.close(showError)
+        if (name === 'none') {
+            return
         }
         debug('TrafficLights.open',name)
         this._port = new SerialPort(name,showError)
     }
 
+    portWrite(d) {
+        if (this._port) {
+            this._port.write(d)
+        }
+    }
+
     red() {
-        this._port && this._port.write('r')
+        this.portWrite('r')
     }
 
     blue() {
-        this._port && this._port.write('b')
+        this.portWrite('b')
     }
 
     green() {
-        this._port && this._port.write('g')
+        this.portWrite('g')
     }
 
     none() {
-        this._port && this._port.write('0')
+        this.portWrite('0')
     }
 
     static comNames() {
         return new Promise((resolve,reject)=>{
+            debug('TrafficLights.comNames')
             SerialPort.Binding.list().then(ports => resolve(ports.map(port => port.comName)))
         })
     }

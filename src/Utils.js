@@ -3,8 +3,8 @@
 import moment from 'moment'
 
 export function findPath(text) {
-  var m1 = text.match(/([A-Z][:][^ :]+)[.](cpp|h)/)
-  var m2 = text.match(/([^ :]+)[.](cpp|h)/)
+  var m1 = text.match(/([A-Z][:][^ :]+)[.](cpp|h)/i)
+  var m2 = text.match(/([^ :]+)[.](cpp|h)/i)
   if (m1) {
     return m1[1] + '.' + m1[2]
   } else if (m2) {
@@ -24,7 +24,11 @@ export function dateTime(d) {
 export function randomBackground(props) {
   return {backgroundColor: `hsl(${Math.round(Math.random()*360)},100%,50%)`}
 }
-  
+
+function toUnixPath(path) {
+  return path.replace(/\\/g,'/').replace(/\/{2,}/,'/')
+}
+
 export function putLinks(text, cwd) {
   return text.split('\n').map((line,j) => {
     let res = []
@@ -39,7 +43,7 @@ export function putLinks(text, cwd) {
         lineNum = +m[1]
         colNum = +m[2]
       } 
-      res.push({t:'a',cwd,path,line:lineNum,col:colNum})
+      res.push({t:'a',cwd,path:toUnixPath(path),line:lineNum,col:colNum})
       line = parts[1]
       path = findPath(line)
     }
