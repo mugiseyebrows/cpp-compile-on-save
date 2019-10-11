@@ -21,7 +21,8 @@ import Input from './Input'
 import ListEdit from './ListEdit'
 import TargetEdit from './TargetEdit'
 import TwoColumnsTable from './TwoColumnTable'
-import TaskList from './TaskList';
+import TaskList from './TaskList'
+import ProgressBar from './ProgressBar'
 
 function lastItem(vs) {
   return vs[vs.length-1]
@@ -57,6 +58,7 @@ class App extends Component {
       commands: {items: [], selected: 0},
       comName: 'none',
       comNames: [],
+      cpuUsage: 0,
     }
 
     this.refStdout = React.createRef()
@@ -197,6 +199,10 @@ class App extends Component {
       let envs = this.state.envs
       envs.selected = envs.items.indexOf(envs.items.find(env_ => env_.name === env.name))
       this.setState({envs})
+    })
+
+    socket.on('cpuusage', (cpuUsage) => {
+      this.setState({cpuUsage})
     })
 
     setInterval(()=>{
@@ -678,10 +684,9 @@ class App extends Component {
             <FlexPaneBar className="tasks-menu">
               <FlexPaneButtons/>
               <FlexPaneTitle/>
-              
               <MenuItem text="abort" onClick={() => this.emit('abort')}/>
               <MenuItem text="cancel" onClick={() => this.emit('cancel')}/>
-
+              <ProgressBar value={this.state.cpuUsage} maxValue={1.0}/>
             </FlexPaneBar>
             <TaskList tasks={this.state.tasks}/>
           </FlexPane>

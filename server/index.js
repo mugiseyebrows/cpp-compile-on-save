@@ -4,6 +4,7 @@ const path = require('path')
 const app = express()
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
+const os = require('os-utils')
 
 /* 
 set DEBUG=cpp-compile-on-save
@@ -19,7 +20,7 @@ const MakeStat = require('./MakeStat')
 const {spawnDetached, getMtime} = require('./Utils')
 const Manager = require('./Manager')
 
-var port = 4000;
+var port = 4000
 server.listen(port, () => {
     console.log(`Server listening at port ${port}`)
 })
@@ -227,7 +228,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('project-command', opts => {
-        let {name, target, mode} = opts;
+        let {name, target, mode} = opts
         
         debug('project-command', opts.name, target.name, mode)
 
@@ -260,4 +261,13 @@ io.on('connection', (socket) => {
         comNames.get(force, (names) => socket.emit('com-names', names))
     })
 
+    cppUsage(socket)
 })
+
+function cppUsage(socket) {
+    os.cpuUsage(v => {
+        debug('cpuusage')
+        socket.emit('cpuusage', v)
+        cppUsage(socket)
+    })
+}
