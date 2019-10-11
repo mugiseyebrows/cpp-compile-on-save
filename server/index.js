@@ -266,7 +266,6 @@ io.on('connection', (socket) => {
 
 function cppUsage(socket) {
     os.cpuUsage(v => {
-        debug('cpuusage')
         socket.emit('cpuusage', v)
         cppUsage(socket)
     })
