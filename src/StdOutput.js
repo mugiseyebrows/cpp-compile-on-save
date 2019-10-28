@@ -8,8 +8,20 @@ export default class StdOutput extends Component {
     }
     
     render() {
+      
+      //console.log('StdOutput.render')
+
       let props = this.props
-      let {lines, showEmpty, key_, cmd, cwd, mode} = this.props
+      let {lines, showEmpty, key_, cmd, cwd, mode, refPane} = this.props
+
+      //console.log(refPane && refPane.current)
+      if (refPane !== undefined) {
+        setTimeout(()=>{
+          let e = refPane.current
+          e.scrollTop = e.scrollHeight
+        },10)
+      }
+
       if (showEmpty === false && lines.length === 0) {
         return null
       }
@@ -21,12 +33,12 @@ export default class StdOutput extends Component {
             } else if (item.t === 'a') {
               return <a key={j} href="#" onClick={(e) => {e.preventDefault(); props.onAnchor(item)}}>{item.path}</a>
             }
-            console.log('item.t',item.t)
+            //console.log('item.t',item.t)
             return null
           })
           return <li key={i}>{items}</li>
       })
-
-      return <ul className="proc-data" key={key_}><li key="-1" className="proc-title">{cmd} {mode} @ {cwd}</li>{data}</ul>
+      let caption = cmd === 'make' ? `${cmd} ${mode} @ ${cwd}` : `${cmd} @ ${cwd}`
+      return <ul className="proc-data" key={key_}><li key="-1" className="proc-title">{caption}</li>{data}</ul>
     }
   }

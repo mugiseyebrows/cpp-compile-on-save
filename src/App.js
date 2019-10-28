@@ -23,21 +23,11 @@ import TargetEdit from './TargetEdit'
 import TwoColumnsTable from './TwoColumnTable'
 import TaskList from './TaskList'
 import ProgressBar from './ProgressBar'
+import MenuItem from './MenuItem'
+import { isArray } from 'util';
 
 function lastItem(vs) {
   return vs[vs.length-1]
-}
-
-let MenuItem = (props) => {
-  let children = React.Children.toArray(props.children)
-  let classNames_ = classNames("menu-item",props.className)
-
-  let onClick
-  if (props.onClick) {
-    onClick = (e) => {e.preventDefault(); props.onClick()}
-  }
-
-  return <div className={classNames_} onClick={onClick} >{props.text}{children}</div>
 }
 
 class App extends Component {
@@ -69,7 +59,7 @@ class App extends Component {
 
     let socket = this.socket
 
-    let onstd = (name,obj) => {
+    let onstd = (name, obj) => {
       let out = this.state[name]
       if (out.length === 0) {
         console.log(`${name}.length === 0`)
@@ -197,7 +187,8 @@ class App extends Component {
 
     socket.on('env',(env) => {
       let envs = this.state.envs
-      envs.selected = envs.items.indexOf(envs.items.find(env_ => env_.name === env.name))
+      let index = env === null ? 0 : envs.items.indexOf(envs.items.find(env_ => env_.name === env.name))
+      envs.selected = index
       this.setState({envs})
     })
 
@@ -435,14 +426,7 @@ class App extends Component {
             </table>)
   }
 
-  scrollStdOutAndStdErr = () => {
-    setTimeout(()=>{
-      let es = [this.refStdout.current, this.refStderr.current, this.refErrors.current]
-      es.filter(e => e)
-        .forEach(e => e.scrollTop = e.scrollHeight)
-      
-    },10)
-  }
+  
 
   renderEnvSelect() {
       
@@ -481,8 +465,7 @@ class App extends Component {
     //let targets = this.renderTargets()
     
     //let bookmarks = this.renderBookmarks()
-    this.scrollStdOutAndStdErr()
-   
+    
     //let bookmarks = this.state.bookmarks.map((bookmark,i) => )
 
     let commands_ = defaults({items:[],selected:0},this.state.commands)
@@ -668,8 +651,10 @@ class App extends Component {
                   <Select className="mode" options={[{value:'debug',label:'debug'},{value:'release',label:'release'}]} onChange={(value) => this.emit('set-mode',value)} selected={this.state.mode} />
                 </MenuItem>
                 <MenuItem className="menu-spacer"/>
+                <MenuItem text="qmake" onClick={() => this.handleMakeAll('qmake')}/>
                 <MenuItem text="make" onClick={() => this.handleMakeAll('make')}/>
                 <MenuItem text="clean" onClick={() => this.handleMakeAll('clean')}/>
+                
                 <Popup trigger={<div className="menu-item"><img src={Star} alt="Star"/></div>} position="bottom right" on="hover" arrow={false} contentStyle={{width:'110px', textAlign: 'center', padding: '0px'}} >
                   <div>
                     {bookmarks}
@@ -696,7 +681,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MenuItem text="clean" onClick={() => this.handleClean('errors')}/>
             </FlexPaneBar>
-            <StdOutputs data={this.state.errors} onAnchor={handleEditFile} showEmpty={false}/>
+            <StdOutputs data={this.state.errors} onAnchor={handleEditFile} showEmpty={false} refPane={this.refErrors}/>
           </FlexPane>
           <FlexPane title="stdout" refPane={this.refStdout} className="stdout">
             <FlexPaneBar className="stdout-menu">
@@ -704,7 +689,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MenuItem text="clean" onClick={() => this.handleClean('stdout')}/>
             </FlexPaneBar>
-            <StdOutputs data={this.state.stdout} onAnchor={handleEditFile}/>
+            <StdOutputs data={this.state.stdout} onAnchor={handleEditFile} refPane={this.refStdout}/>
           </FlexPane>
           <FlexPane title="stderr" refPane={this.refStderr} className="stderr">
             <FlexPaneBar className="stderr-menu">
@@ -712,7 +697,7 @@ class App extends Component {
               <FlexPaneTitle/>
               <MenuItem text="clean" onClick={() => this.handleClean('stderr')}/>
             </FlexPaneBar>
-            <StdOutputs data={this.state.stderr} onAnchor={handleEditFile}/>
+            <StdOutputs data={this.state.stderr} onAnchor={handleEditFile} refPane={this.refStderr}/>
           </FlexPane>
         </FlexPaneContainer>
       </div>

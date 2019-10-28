@@ -78,10 +78,24 @@ function spawnDetached(cmd,args,opts) {
 
     opts = defaults(opts, {detached: true, stdio: 'ignore'})
     //debug('spawnDetached', cmd, args)
-    //debug('opts.env.PATH',opts.env.PATH)
+    //debug('opts.env.PATH',opts.env.PATH,'cmd',cmd)
+    //let path = opts.env.PATH
+    
+    if (process.platform === 'win32') {
+        if (cmd === 'explorer') {
+            let explorer = path.join(process.env.SystemRoot, 'explorer.exe')
+            if (fs.existsSync(explorer)) {
+                cmd = explorer
+            }
+        }
+        if (cmd.match(/[.]dll$/)) {
+            return
+        }
+    }
 
     let child = spawn(cmd,args,opts)
-    child.unref()
+    child.unref()    
+
 }
 
 function getMtime(targets) {

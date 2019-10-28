@@ -1,4 +1,5 @@
 const EventEmitter = require('events')
+const debug = require('debug')('cpp-compile-on-save')
 
 class StdStreamCacher extends EventEmitter {
     constructor() {

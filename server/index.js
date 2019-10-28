@@ -245,8 +245,6 @@ io.on('connection', (socket) => {
         } else {
             let {cmd, args, env} = taskQueue.makeCommand({name, target, mode, cwd:target.cwd, env:taskQueue.env})
 
-            //debug(env.PATH)
-
             if (cmd) {
                 spawnDetached(cmd, args, {cwd:target.cwd,env})
             } else {

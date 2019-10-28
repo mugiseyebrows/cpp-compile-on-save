@@ -252,6 +252,7 @@ class TaskQueue extends EventEmitter {
                 let {cmd,args,env} = this.makeCommand({name:task.cmd, target:task.target, mode:task.mode})
 
                 //console.log('cmd,args',cmd,args)
+                //debug(env.PATH)
 
                 let cwd = task.target ? task.target.cwd : task.cwd
 

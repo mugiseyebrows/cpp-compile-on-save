@@ -43,6 +43,7 @@ class Manager {
             ],selected:0}
         }
         let envs = {items:[{name:'default',path:'',mode:'replace'}], selected: 0}
+        //debug(this._path)
         let config = defaults({envs,targets:{items:[], selected: 0},commands,comName:'none'}, readJson(this._path))
         this._config = config
     }
@@ -131,6 +132,7 @@ class Manager {
     }
 
     saveConfig() {
+        //debug('saveConfig', this._path)
         writeJson(this._path, this._config)
     }
 
